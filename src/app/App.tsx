@@ -133,7 +133,7 @@ function StudioApp() {
         </header>
         <Container>
           <Grid className={
-            "grid-cols-1 gap-5 py-4 @[56rem]/studio:grid-cols-[22rem_minmax(0,1fr)] " +
+            "grid-cols-1 gap-5 py-4 @[56rem]/studio:grid-cols-[24rem_minmax(0,1fr)] " +
             (page === "native"
               ? "h-[calc(100dvh-var(--studio-header-height,3.5625rem))] grid-rows-[minmax(0,1fr)_minmax(0,3fr)] @[56rem]/studio:grid-rows-[minmax(0,1fr)]"
               : "items-start")

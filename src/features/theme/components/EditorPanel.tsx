@@ -86,69 +86,77 @@ export function EditorPanel({
       className={`flex min-h-0 min-w-0 flex-col gap-3 ${platform === "web" ? "@[56rem]/studio:sticky @[56rem]/studio:top-[4.5rem] @[56rem]/studio:max-h-[calc(100dvh-5.5rem)]" : ""}`}
       aria-label="Theme editor"
     >
-      <div className="flex shrink-0 flex-col items-start gap-2 px-2">
-        <ToggleButtonGroup size="sm" aria-label="Theme platform" selectionMode="single" disallowEmptySelection
-          selectedKeys={[platform]} onSelectionChange={(keys) => {
-            const selected = [...keys][0];
-            if (selected === "web" || selected === "native") onPlatformChange(selected);
-          }}>
-          <ToggleButton id="web"><Globe2 size={14} aria-hidden="true" /> Web</ToggleButton>
-          <ToggleButton id="native"><Smartphone size={14} aria-hidden="true" /> Native</ToggleButton>
-        </ToggleButtonGroup>
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-1 gap-y-2 px-2">
+        <div
+          className="flex items-center gap-1 sm:gap-2"
+          role="group"
+          aria-label="Theme actions"
+        >
+          <Tooltip>
+            <Button
+              size="md"
+              isIconOnly
+              variant="outline"
+              aria-label="Reset theme"
+              onPress={onReset}
+            >
+              <RotateCcw aria-hidden="true" />
+            </Button>
+            <Tooltip.Content>Reset theme</Tooltip.Content>
+          </Tooltip>
+          <Tooltip>
+            <Button
+              size="md"
+              isIconOnly
+              variant="outline"
+              aria-label={`Copy CSS ${platform === "web" ? "Web" : "Native"}`}
+              onPress={copyCss}
+            >
+              {copyStatus === "done" ? (
+                <Check aria-hidden="true" />
+              ) : (
+                <Copy aria-hidden="true" />
+              )}
+            </Button>
+            <Tooltip.Content>Copy theme CSS</Tooltip.Content>
+          </Tooltip>
+          <Tooltip>
+            <Button
+              size="md"
+              isIconOnly
+              variant="outline"
+              aria-label="Import CSS"
+              onPress={onImportCss}
+            >
+              <ClipboardPaste aria-hidden="true" />
+            </Button>
+            <Tooltip.Content>Import CSS</Tooltip.Content>
+          </Tooltip>
+          <span className="sr-only" role="status">
+            {copyStatus === "done" ? "CSS copied" : ""}
+          </span>
+        </div>
+        <div className="ms-auto flex shrink-0">
+          <ToggleButtonGroup size="sm" aria-label="Theme platform" selectionMode="single" disallowEmptySelection
+            selectedKeys={[platform]} onSelectionChange={(keys) => {
+              const selected = [...keys][0];
+              if (selected === "web" || selected === "native") onPlatformChange(selected);
+            }}>
+            <ToggleButton id="web">
+              <span className="hidden sm:inline-flex"><Globe2 size={14} aria-hidden="true" /></span>
+              Web
+            </ToggleButton>
+            <ToggleButton id="native">
+              <span className="hidden sm:inline-flex"><Smartphone size={14} aria-hidden="true" /></span>
+              Native
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </div>
       </div>
       <section aria-label="Theme settings"
         className="scrollbar max-h-96 min-h-0 min-w-0 overflow-y-auto overscroll-contain @[56rem]/studio:max-h-none [@media(hover:hover)]:[&:not(:hover,:focus-within)]:[--scrollbar-color:transparent_transparent]"
         data-scrollbar="thin">
         <div className="flex flex-col gap-2 px-2 pb-0">
-          <div
-            className="flex flex-wrap items-center justify-start gap-2"
-            role="group"
-            aria-label="Theme actions"
-          >
-            <Tooltip>
-              <Button
-                size="md"
-                isIconOnly
-                variant="outline"
-                aria-label="Reset theme"
-                onPress={onReset}
-              >
-                <RotateCcw aria-hidden="true" />
-              </Button>
-              <Tooltip.Content>Reset theme</Tooltip.Content>
-            </Tooltip>
-            <Tooltip>
-              <Button
-                size="md"
-                isIconOnly
-                variant="outline"
-                aria-label={`Copy CSS ${platform === "web" ? "Web" : "Native"}`}
-                onPress={copyCss}
-              >
-                {copyStatus === "done" ? (
-                  <Check aria-hidden="true" />
-                ) : (
-                  <Copy aria-hidden="true" />
-                )}
-              </Button>
-              <Tooltip.Content>Copy theme CSS</Tooltip.Content>
-            </Tooltip>
-            <Tooltip>
-              <Button
-                size="md"
-                isIconOnly
-                variant="outline"
-                aria-label="Import CSS"
-                onPress={onImportCss}
-              >
-                <ClipboardPaste aria-hidden="true" />
-              </Button>
-              <Tooltip.Content>Import CSS</Tooltip.Content>
-            </Tooltip>
-            <span className="sr-only" role="status">
-              {copyStatus === "done" ? "CSS copied" : ""}
-            </span>
-          </div>
           <div>
             <Select
               selectedKey={selectedPreset === "custom" ? null : selectedPreset}

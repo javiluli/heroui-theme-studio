@@ -109,7 +109,7 @@ The default palette pairs a clear cobalt-blue action color with near-neutral lig
 
 ## Layout
 
-The workspace uses shared gutters of 16px on small screens and 20px at desktop sizes. At a workspace width of 56rem, the editor occupies a 22rem column beside the preview. The Web editor stays sticky as the gallery scrolls. The catalog index uses its own column when the gallery is wide enough and becomes a component picker at narrower widths.
+The workspace uses shared gutters of 16px on small screens and 20px at desktop sizes. At a workspace width of 56rem, the editor occupies a 24rem column beside the preview. The Web editor stays sticky as the gallery scrolls. The catalog index uses its own column when the gallery is wide enough and becomes a component picker at narrower widths.
 
 The main header holds the documentation link, theme mode, AI, and export controls. Reset, copy, and import actions live in the editor. The centered Web tabs stay below the header while scrolling. The AI chat narrows the studio from the right on wide screens and uses the available width on small screens. The website demo adapts to its container width.
 

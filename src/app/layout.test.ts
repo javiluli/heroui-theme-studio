@@ -43,7 +43,7 @@ describe("Reusable layout wrappers", () => {
     expect((app.match(/<Container>/g) || []).length).toBe(2);
     expect(app).toContain('<header className="sticky top-0 z-30');
     expect(app).toContain("<StudioHeader");
-    expect(app).toContain("grid-cols-[22rem_minmax(0,1fr)]");
+    expect(app).toContain("grid-cols-[24rem_minmax(0,1fr)]");
     expect(app).toContain("<EditorPanel");
     expect(app).toMatch(/<main[\s\S]*<StudioViews page=\{page\} onNavigate=\{navigate\}>/);
     expect(app).toContain('page === "components" ? "max-w-334" : "max-w-6xl"');
