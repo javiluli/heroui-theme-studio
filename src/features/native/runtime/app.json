@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "HeroUI Theme Studio Native Preview",
+    "slug": "heroui-theme-studio-native-preview",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "dev.javiluli.herouinativepreview"
+    },
+    "android": {
+      "package": "dev.javiluli.herouinativepreview"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "experiments": {
+      "baseUrl": "/native-runtime"
+    }
+  }
+}

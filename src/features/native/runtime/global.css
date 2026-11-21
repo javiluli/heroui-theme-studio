@@ -1,0 +1,7 @@
+@import "tailwindcss";
+@import "uniwind";
+@import "heroui-native/styles";
+
+@layer base {
+  body { font-family: var(--font-sans); }
+}

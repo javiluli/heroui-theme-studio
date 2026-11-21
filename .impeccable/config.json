@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "public/native-runtime/_expo/static/css/global-17c616ca73ff07f4c5133865d55c33e4.css"
+        ],
+        "createdAt": "2026-11-20T19:51:48.544Z",
+        "reason": "Review: Expo compiles bg-amber-500, text-stone-500, text-zinc-50 and text-zinc-300 into four separate utilities. None are used by the Native viewer source or rendered catalogue. The minified CSS scan associates unrelated selectors on one line."
+      },
+      {
+        "rule": "design-system-font",
+        "value": "system",
+        "createdAt": "2026-11-21T15:44:26.453Z",
+        "reason": "Codex triage: System is the existing theme key for the Inter and system-ui stack declared in DESIGN.md."
+      }
+    ]
+  }
+}

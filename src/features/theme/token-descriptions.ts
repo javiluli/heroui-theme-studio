@@ -1,0 +1,41 @@
+import type { ColorToken } from "./model";
+
+export type EditableThemeVariable = `--${ColorToken}` | "--radius" | "--field-radius" | "--font-sans";
+
+// HeroUI React v3: Colors, Theming and the linked default theme CSS.
+export const TOKEN_DESCRIPTIONS: Record<EditableThemeVariable, string> = {
+  "--accent": "Brand color for prominent actions, such as the primary Button background. HeroUI derives soft and interaction colors from it.",
+  "--accent-foreground": "Text and icons on an accent background.",
+  "--background": "Base page background.",
+  "--border": "Outline for elements that need a visible border.",
+  "--danger": "Destructive actions, errors, and critical states.",
+  "--danger-foreground": "Text and icons on a danger background.",
+  "--default": "Neutral color for lower-emphasis elements, such as the secondary Button background.",
+  "--default-foreground": "Text and icons on a neutral background.",
+  "--field-background": "Form field background.",
+  "--field-border": "Outline for form field variants with a border.",
+  "--field-foreground": "Form field text and icons.",
+  "--field-placeholder": "Placeholder text in an empty field.",
+  "--focus": "Visual focus indicator, such as when navigating with Tab.",
+  "--foreground": "Primary text and icon color.",
+  "--muted": "Lower-emphasis text and elements.",
+  "--overlay": "Background of overlays such as menus, popovers, and dialogs.",
+  "--overlay-foreground": "Text and icons on overlays.",
+  "--scrollbar": "Thumb color of the themed scrollbar.",
+  "--segment": "Selected segment background.",
+  "--segment-foreground": "Selected segment text and icons.",
+  "--separator": "Subtle lines that separate content.",
+  "--success": "Confirmations, positive outcomes, and completed states.",
+  "--success-foreground": "Text and icons on a success background.",
+  "--surface": "Background of containers such as cards.",
+  "--surface-foreground": "Text and icons on the primary surface.",
+  "--surface-secondary": "Background for a second surface level.",
+  "--surface-secondary-foreground": "Text and icons on the secondary surface.",
+  "--surface-tertiary": "Background for a third surface level.",
+  "--surface-tertiary-foreground": "Text and icons on the tertiary surface.",
+  "--warning": "Warnings and states that need attention.",
+  "--warning-foreground": "Text and icons on a warning background.",
+  "--radius": "Base radius. HeroUI derives several corner sizes from this value.",
+  "--field-radius": "Corner radius of form fields.",
+  "--font-sans": "Global sans-serif font family and its fallbacks.",
+};

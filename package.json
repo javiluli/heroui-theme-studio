@@ -1,0 +1,41 @@
+{
+  "name": "heroui-theme-studio",
+  "description": "Unofficial theme generator for HeroUI v3",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "postinstall": "npm ci --prefix src/features/native/runtime --no-audit --no-fund",
+    "native:build": "npm --prefix src/features/native/runtime run build:web",
+    "predev": "npm run native:build",
+    "dev": "vite",
+    "prebuild": "npm run native:build",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@heroui/react": "^3.0.0",
+    "@heroui/styles": "^3.0.0",
+    "@mlc-ai/web-llm": "^0.2.88",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-aria-components": "^1.22.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.0",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "~5.9.2",
+    "vite": "^7.1.0",
+    "vitest": "5.1.0"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

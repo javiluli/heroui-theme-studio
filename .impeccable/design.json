@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-19T19:49:46Z",
+  "title": "Design System: HeroUI Theme Studio",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Azul cobalto claro",
+        "canonical": "oklch(0.6204 0.195 253.83)",
+        "tonalRamp": ["oklch(18% 0.06 253.83)", "oklch(29% 0.11 253.83)", "oklch(40% 0.15 253.83)", "oklch(51% 0.18 253.83)", "oklch(62% 0.195 253.83)", "oklch(73% 0.16 253.83)", "oklch(84% 0.10 253.83)", "oklch(95% 0.025 253.83)"]
+      },
+      "on-primary": {
+        "role": "neutral",
+        "displayName": "Texto sobre acento",
+        "canonical": "var(--snow)",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(25% 0 0)", "oklch(35% 0 0)", "oklch(45% 0 0)", "oklch(55% 0 0)", "oklch(65% 0 0)", "oklch(80% 0 0)", "oklch(99% 0 0)"]
+      },
+      "light-canvas": {
+        "role": "neutral",
+        "displayName": "Lienzo claro",
+        "canonical": "oklch(0.9702 0 0)",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(25% 0 0)", "oklch(35% 0 0)", "oklch(45% 0 0)", "oklch(55% 0 0)", "oklch(65% 0 0)", "oklch(80% 0 0)", "oklch(97.02% 0 0)"]
+      },
+      "dark-canvas": {
+        "role": "neutral",
+        "displayName": "Tinta oscura",
+        "canonical": "oklch(12% 0.005 285.823)",
+        "tonalRamp": ["oklch(12% 0.005 285.823)", "oklch(20% 0.006 285.823)", "oklch(30% 0.006 285.823)", "oklch(40% 0.005 285.823)", "oklch(50% 0.004 285.823)", "oklch(60% 0.003 285.823)", "oklch(75% 0.002 285.823)", "oklch(95% 0.001 285.823)"]
+      },
+      "light-surface": {
+        "role": "neutral",
+        "displayName": "Superficie clara",
+        "canonical": "var(--white)",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(25% 0 0)", "oklch(35% 0 0)", "oklch(45% 0 0)", "oklch(55% 0 0)", "oklch(65% 0 0)", "oklch(80% 0 0)", "oklch(100% 0 0)"]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Superficie de tinta",
+        "canonical": "oklch(0.2103 0.0059 285.89)",
+        "tonalRamp": ["oklch(15% 0.005 285.89)", "oklch(21.03% 0.0059 285.89)", "oklch(30% 0.006 285.89)", "oklch(40% 0.005 285.89)", "oklch(50% 0.004 285.89)", "oklch(60% 0.003 285.89)", "oklch(75% 0.002 285.89)", "oklch(95% 0.001 285.89)"]
+      }
+    },
+    "typographyMeta": {
+      "body": {"displayName": "Inter / System Sans", "purpose": "Interface copy and component previews."},
+      "title": {"displayName": "Component title", "purpose": "Clear heading for each playground example."},
+      "label": {"displayName": "Control label", "purpose": "Compact labels and supporting text."}
+    },
+    "shadows": [
+      {"name": "surface-light", "value": "0 2px 4px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.06), 0 0 1px 0 rgba(0, 0, 0, 0.06)", "purpose": "Native HeroUI lift for surfaces in light mode."},
+      {"name": "overlay-light", "value": "0 2px 8px 0 rgba(0, 0, 0, 0.06), 0 -6px 12px 0 rgba(0, 0, 0, 0.03), 0 14px 28px 0 rgba(0, 0, 0, 0.08)", "purpose": "Native HeroUI depth for floating layers in light mode."}
+    ],
+    "motion": [
+      {"name": "button-state", "value": "100ms var(--ease-out)", "purpose": "Native button background and shadow response."},
+      {"name": "button-transform", "value": "250ms var(--ease-smooth)", "purpose": "Native button transform response."},
+      {"name": "ai-panel-width", "value": "200ms", "purpose": "Opening and closing the assistant panel."}
+    ],
+    "breakpoints": [
+      {"name": "workspace", "value": "56rem", "purpose": "Container width for the side-by-side editor and preview."},
+      {"name": "catalog", "value": "60rem", "purpose": "Container width for the component index column."}
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action using HeroUI's native primary variant.",
+      "html": "<button class=\"ds-button-primary\">Apply theme</button>",
+      "css": ".ds-button-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border: 0; border-radius: 24px; background: var(--accent); color: var(--accent-foreground); font: 500 14px var(--font-sans); cursor: pointer; transition: transform 250ms var(--ease-smooth), background-color 100ms var(--ease-out), box-shadow 100ms var(--ease-out); } .ds-button-primary:hover { background: var(--accent-hover); } .ds-button-primary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; } .ds-button-primary:active { transform: scale(.98); }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "HeroUI field with theme-controlled surface, foreground, border, and radius.",
+      "html": "<label class=\"ds-field\"><span>Email</span><input type=\"email\" value=\"alex@heroui.com\" /></label>",
+      "css": ".ds-field { display: grid; gap: 6px; color: var(--foreground); font: 400 12px var(--font-sans); } .ds-field input { min-height: 36px; padding: 8px 12px; border: 0 solid var(--field-border); border-radius: var(--field-radius); background: var(--field-background); color: var(--field-foreground); font: 400 14px var(--font-sans); box-shadow: var(--field-shadow); transition: background-color 150ms var(--ease-smooth), border-color 150ms var(--ease-smooth), box-shadow 150ms var(--ease-out); } .ds-field input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Playground Card",
+      "kind": "card",
+      "refersTo": "gallery-card",
+      "description": "Semantic surface frame with an inset stage that grows to fit the example.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-stage\">Component preview</div></article>",
+      "css": ".ds-card { padding: 8px; border-radius: calc(var(--radius) + 8px); background: var(--surface); color: var(--foreground); font-family: var(--font-sans); } .ds-stage { display: grid; min-height: 13rem; place-items: center; box-sizing: border-box; padding: 40px 16px 12px; border-radius: var(--radius); background: var(--background); }"
+    },
+    {
+      "name": "Selected Navigation",
+      "kind": "nav",
+      "refersTo": "selected-navigation",
+      "description": "Selected view in the sticky Web preview tabs.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-link ds-nav-link-selected\" href=\"?view=components\">Components</a><a class=\"ds-nav-link\" href=\"?view=collage\">Collage</a><a class=\"ds-nav-link\" href=\"?view=website\">Web</a></nav>",
+      "css": ".ds-nav { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-secondary); font: 600 12px var(--font-sans); } .ds-nav-link { padding: 8px 12px; border-radius: var(--radius); color: var(--muted); text-decoration: none; } .ds-nav-link-selected { background: var(--surface); color: var(--foreground); } .ds-nav-link:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Theme Token Tile",
+      "kind": "custom",
+      "refersTo": "theme-token-tile",
+      "description": "Editor wrapper for a native color picker and its CSS variable name.",
+      "html": "<button class=\"ds-token-tile\"><span class=\"ds-swatch\"></span><code>--accent</code></button>",
+      "css": ".ds-token-tile { display: flex; align-items: center; gap: 8px; min-height: 56px; width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-secondary); color: var(--foreground); text-align: left; font: 400 11px ui-monospace, SFMono-Regular, Consolas, monospace; cursor: pointer; } .ds-token-tile:hover { background: var(--default); } .ds-token-tile:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; } .ds-swatch { width: 16px; height: 16px; flex: none; border: 1px solid var(--border); border-radius: 999px; background: var(--accent); }"
+    }
+  ],
+  "narrative": {
+    "overview": "HeroUI Theme Studio is an unofficial theme generator for HeroUI v3. Theme controls sit beside live examples so developers can change a token and see its effect on React and Native components.\n\nThe visual system follows HeroUI's semantic variables and native component behavior. Color provides the main signal for the active theme and meaningful states; quiet neutral surfaces keep the dense catalog readable.",
+    "keyCharacteristics": ["Clear, tool-like hierarchy with compact controls and generous separation between component examples.", "The current HeroUI default palette uses a light cobalt-blue accent over neutral ink surfaces; theme edits can replace that palette globally.", "Native HeroUI components communicate their own focus, selected, disabled, loading, and validation states.", "Light mode uses soft native elevation; dark mode relies on tonal surfaces without visible shadows."],
+    "rules": [
+      {"name": "The Live Sample Rule", "body": "A theme change should be judged in real HeroUI components, not only in an isolated color swatch.", "section": "overview"},
+      {"name": "The Semantic Color Rule", "body": "Use the approved HeroUI theme variables for color roles; do not create component-specific color systems.", "section": "colors"},
+      {"name": "The Tone Before Shadow Rule", "body": "Establish hierarchy with semantic surface levels first; reserve elevation for HeroUI's native light-mode behavior.", "section": "elevation"}
+    ],
+    "dos": ["Do use the installed HeroUI v3 native component variants and semantic theme variables.", "Do keep theme changes visible across the editor, real component examples, and website preview.", "Do group palette controls by semantic purpose and display their CSS variable names.", "Do keep keyboard access and visible focus, and respect reduced-motion preferences."],
+    "donts": ["Don't add CSS rules that override HeroUI component internals; app-owned layout belongs on HTML wrappers.", "Don't add theme controls outside the 31 approved color tokens, --radius, --field-radius, and --font-sans.", "Don't use decorative color, borders, badges, or shadows that compete with the component previews.", "Don't imply that the free component catalog includes HeroUI Pro components."]
+  }
+}

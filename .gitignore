@@ -1,0 +1,17 @@
+node_modules/
+.expo/
+dist/
+coverage/
+*.local
+.env*
+!.env.example
+.DS_Store
+.vite/
+*.tsbuildinfo
+public/native-runtime/
+.vercel/
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+.impeccable/live/
+# heroui-agents-md
+.heroui-docs/

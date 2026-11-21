@@ -1,0 +1,235 @@
+import { Button, Label, ListBox, NumberField, Select, Spinner } from "@heroui/react";
+import { RefreshCw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  PREVIEW_PING,
+  PREVIEW_READY,
+  PREVIEW_RENDERED,
+  PREVIEW_THEME,
+  type PreviewThemeMessage,
+} from "./runtime/src/theme-protocol";
+import type { ThemeConfig, ThemeMode } from "../theme/model";
+import { getThemeVariables } from "../theme/conversion";
+import { DEVICE_PRESETS } from "./device-presets";
+
+const defaultDevice = DEVICE_PRESETS[0];
+const bezel = 12;
+type Size = { width: number; height: number };
+type DevicePreset = (typeof DEVICE_PRESETS)[number];
+
+const previewUrl = import.meta.env.BASE_URL + "native-runtime/index.html";
+
+export default function NativePreviewPage({
+  theme,
+  mode,
+}: {
+  theme: ThemeConfig;
+  mode: ThemeMode;
+}) {
+  const [device, setDevice] = useState<DevicePreset | "custom">(defaultDevice);
+  const [customSize, setCustomSize] = useState<Size>();
+  const [attempt, setAttempt] = useState(0);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
+  const frame = useRef<HTMLIFrameElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
+  const [available, setAvailable] = useState<Size>({ width: 0, height: 0 });
+  const size = device === "custom" ? customSize ?? defaultDevice : device;
+  const frameWidth = size.width + bezel * 2;
+  const frameHeight = size.height + bezel * 2;
+  const scale = Math.min(1, available.width / frameWidth, available.height / frameHeight);
+
+  useEffect(() => {
+    const element = stage.current;
+    if (!element) return;
+    const measure = () => setAvailable({ width: element.clientWidth, height: element.clientHeight });
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const origin = window.location.origin;
+    const root = document.documentElement;
+    const defaults = Object.entries(getThemeVariables(theme, mode));
+    let sent: Record<string, string> | undefined;
+    const syncTheme = (force = false) => {
+      if (root.dataset.theme !== mode) return;
+      // ColorPicker paints on the document during drags without updating React state.
+      const variables = Object.fromEntries(defaults.map(([name, value]) =>
+        [name, root.style.getPropertyValue(name) || value]));
+      if (!force && sent && Object.entries(variables).every(([name, value]) => sent?.[name] === value)) return;
+      sent = variables;
+      const message: PreviewThemeMessage = {
+        type: PREVIEW_THEME,
+        mode,
+        variables,
+      };
+      frame.current?.contentWindow?.postMessage(message, origin);
+    };
+    const receiveReady = (event: MessageEvent) => {
+      if (
+        event.origin !== origin ||
+        event.source !== frame.current?.contentWindow
+      )
+        return;
+      if (event.data === PREVIEW_READY) syncTheme(true);
+      if (event.data === PREVIEW_RENDERED) setStatus("ready");
+    };
+    window.addEventListener("message", receiveReady);
+    const observer = new MutationObserver(() => syncTheme());
+    if (status === "ready") {
+      syncTheme();
+      observer.observe(root, { attributeFilter: ["style"] });
+    } else {
+      frame.current?.contentWindow?.postMessage(PREVIEW_PING, origin);
+    }
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("message", receiveReady);
+    };
+  }, [attempt, status, theme, mode]);
+
+  useEffect(() => {
+    if (status !== "loading") return;
+    const timer = window.setTimeout(() => setStatus("error"), 20000);
+    return () => window.clearTimeout(timer);
+  }, [attempt, status]);
+
+  const reload = () => {
+    setStatus("loading");
+    setAttempt((current) => current + 1);
+  };
+
+  return (
+    <section
+      aria-labelledby="native-preview-title"
+      className="flex h-full min-h-0 min-w-0 flex-col gap-4"
+    >
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <h1
+            id="native-preview-title"
+            className="text-xl font-semibold tracking-tight"
+          >
+            HeroUI Native
+          </h1>
+          <p className="hidden text-sm text-muted sm:block">
+            Preview your theme on React Native components.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          isIconOnly
+          variant="ghost"
+          aria-label="Reload preview"
+          onPress={reload}
+        >
+          <RefreshCw size={16} aria-hidden="true" />
+        </Button>
+      </header>
+
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 rounded-[calc(var(--radius)+var(--spacing)*2)] bg-surface p-2">
+        <div className="flex shrink-0 flex-wrap items-end gap-2 px-2 pt-1">
+          <div className="min-w-0 grow basis-48 lg:max-w-64">
+            <Select fullWidth selectedKey={device === "custom" ? device : device.id}
+              onSelectionChange={(key) => {
+                if (key === "custom") {
+                  setCustomSize((current) => current ?? { width: size.width, height: size.height });
+                  setDevice(key);
+                } else {
+                  const preset = DEVICE_PRESETS.find(({ id }) => id === key);
+                  if (preset) setDevice(preset);
+                }
+              }}>
+              <Label>
+                Device size
+                {device !== "custom" && <span className="ms-2 whitespace-nowrap text-xs text-muted">{size.width} × {size.height} CSS px</span>}
+              </Label>
+              <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {DEVICE_PRESETS.map(({ id, label, width, height }) => (
+                    <ListBox.Item key={id} id={id} textValue={label}>
+                      <Label>{label}</Label>
+                      <span className="text-xs text-muted">{width} × {height}</span>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                  <ListBox.Item id="custom">Custom<ListBox.ItemIndicator /></ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
+          </div>
+          {device === "custom" && (
+            <div className="grid min-w-0 grow basis-52 grid-cols-2 gap-2 lg:max-w-64">
+              {(["width", "height"] as const).map((dimension) => (
+                <NumberField key={dimension} fullWidth minValue={160} maxValue={4096} step={1}
+                  value={size[dimension]}
+                  onChange={(value) => {
+                    if (Number.isFinite(value)) {
+                      setCustomSize((current) => ({ ...(current ?? size), [dimension]: value }));
+                    }
+                  }}>
+                  <Label>{dimension === "width" ? "Width (px)" : "Height (px)"}</Label>
+                  <NumberField.Group><NumberField.Input /></NumberField.Group>
+                </NumberField>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div
+          ref={stage}
+          className="grid min-h-0 min-w-0 flex-1 place-items-center overflow-clip rounded-(--radius) bg-background"
+        >
+          <div className="relative" style={{ width: frameWidth * scale, height: frameHeight * scale }}>
+            {/* Fit the shell without changing the iframe's logical viewport. */}
+            <div className="absolute top-0 left-0 origin-top-left overflow-hidden rounded-[2.65rem] border-8 border-[#1e2024] bg-[#090a0b] p-1"
+              style={{ width: frameWidth, height: frameHeight, transform: `scale(${scale})` }}>
+              <div className="relative h-full overflow-hidden rounded-[1.95rem] bg-background">
+                <iframe
+                  key={attempt}
+                  ref={frame}
+                  title="HeroUI Native examples"
+                  src={previewUrl}
+                  className={`block h-full w-full border-0 ${status === "ready" ? "" : "invisible"}`}
+                  onLoad={() =>
+                    frame.current?.contentWindow?.postMessage(
+                      PREVIEW_PING,
+                      window.location.origin,
+                    )
+                  }
+                  onError={() => setStatus("error")}
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-2 left-1/2 h-4 w-20 -translate-x-1/2 rounded-full bg-[#1e2024]"
+                />
+                {status !== "ready" && (
+                  <div
+                    role="status"
+                    className="absolute inset-0 grid place-content-center gap-3 px-6 text-center text-sm"
+                  >
+                    {status === "loading" ? (
+                      <div className="flex items-center gap-2 text-muted">
+                        <Spinner size="sm" /> Loading examples…
+                      </div>
+                    ) : (
+                      <>
+                        <p>The HeroUI Native preview took too long to respond.</p>
+                        <Button variant="secondary" size="sm" onPress={reload}>Reload</Button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
