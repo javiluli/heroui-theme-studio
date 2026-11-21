@@ -17,6 +17,12 @@ import { getModeSettings } from "../mode-layout";
 import { NATIVE_COLOR_LINKS } from "../native-color-links";
 import type { EditableThemeVariable } from "../token-descriptions";
 
+const linkExplanations: Partial<Record<ColorToken, string>> = {
+  accent: "Focus indicators follow the brand color.",
+  foreground: "Text across surfaces and overlays follows the main text color.",
+  muted: "Field placeholders follow the secondary text color.",
+};
+
 interface EditorPanelProps {
   platform: ThemePlatform;
   onPlatformChange: (platform: ThemePlatform) => void;
@@ -69,7 +75,6 @@ export function EditorPanel({
   const palette = theme.palettes[mode];
   const [copy, setCopy] = useState<{ theme: ThemeConfig; platform: ThemePlatform; status: "done" | "error" }>();
   const copyStatus = copy?.theme === theme && copy.platform === platform ? copy.status : "idle";
-  const [hideLinked, setHideLinked] = useState(true);
   const copyCss = async () => {
     try {
       await navigator.clipboard.writeText(exportThemeCss(theme, platform));
@@ -212,7 +217,7 @@ export function EditorPanel({
                 <Info size={15} aria-hidden="true" />
               </Button>
               <Tooltip.Content placement="right">
-                <div className="max-w-64 space-y-2 leading-relaxed">
+                <div className="max-w-80 space-y-3 text-xs leading-snug">
                   <p>
                     <strong>
                       HeroUI defaults for {platform === "native" ? "Native" : "Web"} · {" "}
@@ -220,52 +225,36 @@ export function EditorPanel({
                     </strong>
                   </p>
                   <p>
-                    Each source token supplies the values listed below it. Turn off token links to edit those colors individually.
+                    These are HeroUI’s default color links for this mode. When enabled, each group follows its main token, so changing that color updates the whole group.
                   </p>
-                  <dl className="grid gap-1.5">
+                  <p>
+                    Linked controls are hidden automatically. Turn off token links to show them and edit each color independently.
+                  </p>
+                  <div className="space-y-3">
                     {linkSources.map((source) => {
                       const dependents = COLOR_TOKENS.filter(
                         (token) => nativeLinks[token] === source,
                       );
                       return (
-                        <div key={source}>
-                          <dt>
-                            <strong>
-                              <code>--{source}</code>
-                            </strong>
-                          </dt>
-                          <dd className="wrap-anywhere">
-                            {dependents
-                              .map(
-                                (token) =>
-                                  `--${token}${token === "scrollbar" ? " (15% opacity)" : ""}`,
-                              )
-                              .join(", ")}
-                          </dd>
-                        </div>
+                        <section key={source} aria-labelledby={`linked-colors-${source}`}
+                          className="space-y-1 border-t border-separator pt-2">
+                          <h3 id={`linked-colors-${source}`} className="text-sm font-semibold text-foreground">
+                            <code>--{source}</code>
+                          </h3>
+                          {linkExplanations[source] && <p>{linkExplanations[source]}</p>}
+                          <ul className="list-disc space-y-0.5 ps-4">
+                            {dependents.map((token) => (
+                              <li key={token} className="wrap-anywhere">
+                                <code>--{token}</code>
+                                {token === "scrollbar" && <span> · main text color at 15% opacity</span>}
+                              </li>
+                            ))}
+                          </ul>
+                        </section>
                       );
                     })}
-                  </dl>
+                  </div>
                 </div>
-              </Tooltip.Content>
-            </Tooltip>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <Switch size="sm" isSelected={useNativeLinks && hideLinked} isDisabled={!useNativeLinks} onChange={setHideLinked}>
-              <Switch.Content>
-                <Switch.Control><Switch.Thumb /></Switch.Control>
-                <Label>Hide linked colors</Label>
-              </Switch.Content>
-            </Switch>
-            <Tooltip delay={200}>
-              <Button size="sm" isIconOnly variant="ghost" aria-label="About hiding linked colors">
-                <Info size={15} aria-hidden="true" />
-              </Button>
-              <Tooltip.Content placement="right">
-                <p className="max-w-56 leading-relaxed">
-                  Hides color controls that follow another token, such as <code>--focus</code> when it follows <code>--accent</code>.
-                  The theme still uses these colors. Edit them through their source token.
-                </p>
               </Tooltip.Content>
             </Tooltip>
           </div>
@@ -288,14 +277,12 @@ export function EditorPanel({
 
               <div className="grid grid-cols-2 items-stretch gap-2">
                 {group.tokens.filter((token) => platform === "web" || token !== "scrollbar").map((token) => {
-                  const linkedTo = useNativeLinks ? nativeLinks[token] : undefined;
-                  if (linkedTo && hideLinked) return null;
+                  if (useNativeLinks && nativeLinks[token]) return null;
                   return <ColorControl
                     key={token}
                     token={token}
                     value={palette[token]}
                     hex={colorToHex(palette[token], palette)}
-                    linkedTo={linkedTo}
                     highlighted={highlightedVariable === `--${token}`}
                     onChange={onColor}
                     onPreview={onPreviewColor}

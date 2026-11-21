@@ -19,7 +19,6 @@ interface ColorControlProps {
   token: ColorToken;
   value: string;
   hex: string;
-  linkedTo?: ColorToken;
   highlighted?: boolean;
   onChange: (token: ColorToken, color: string) => void;
   onPreview: (token: ColorToken, color: string) => void;
@@ -31,7 +30,6 @@ export const ColorControl = memo(function ColorControl({
   token,
   value,
   hex,
-  linkedTo,
   highlighted,
   onChange,
   onPreview,
@@ -77,7 +75,6 @@ export const ColorControl = memo(function ColorControl({
     <EditorTokenTarget
       variable={`--${token}`}
       highlighted={highlighted}
-      data-linked-to={linkedTo}
       className="relative grid min-w-0 rounded-(--field-radius) bg-default text-default-foreground"
     >
         <ColorPicker
@@ -86,8 +83,7 @@ export const ColorControl = memo(function ColorControl({
         >
           <ColorPicker.Trigger
             className="w-full min-w-0"
-            isDisabled={linkedTo !== undefined}
-            aria-label={linkedTo ? `--${token} linked to --${linkedTo}` : `Edit color for --${token}`}
+            aria-label={`Edit color for --${token}`}
             onPress={() => {
               setPickerColor(parseColor(hex).toFormat("hsb"));
               if (token === "overlay") setOverlayBackground(cssColorValue(value));
@@ -155,10 +151,6 @@ export const ColorControl = memo(function ColorControl({
               <div className="max-w-56 space-y-1 leading-relaxed">
                 <strong><code>--{token}</code></strong>
                 <p>{TOKEN_DESCRIPTIONS[`--${token}`]}</p>
-                {linkedTo && <p>
-                  {token === "scrollbar" ? <>When token links are enabled, HeroUI uses <code>--foreground</code> at 15% opacity.</> :
-                    <>When token links are enabled, this token gets its value from <code>--{linkedTo}</code>.</>}
-                </p>}
               </div>
             </Tooltip.Content>
           </Tooltip>
