@@ -2,7 +2,7 @@ import { useCallback, useLayoutEffect, useRef } from 'react';
 import { cssColorValue, getThemeVariables } from './conversion';
 import type { ColorToken, ThemeConfig, ThemeMode } from './model';
 
-/** Apply only the user-approved variables to <html>, including HeroUI portals. */
+/** Apply the approved theme to <html>, including HeroUI portals. */
 export function useDocumentTheme(theme: ThemeConfig, mode: ThemeMode) {
   const frame = useRef<number | null>(null);
   const draft = useRef<{ token: ColorToken; color: string } | null>(null);
@@ -48,6 +48,8 @@ export function useDocumentTheme(theme: ThemeConfig, mode: ThemeMode) {
     root.classList.toggle('dark', mode === 'dark');
     root.classList.toggle('light', mode === 'light');
     root.style.colorScheme = mode;
+    // HeroUI's scrollbar utility reads this pair rather than the editable alias.
+    root.style.setProperty('--scrollbar-color', 'var(--scrollbar) var(--scrollbar-track)');
   }, [mode]);
 
   useLayoutEffect(() => {

@@ -7,7 +7,7 @@ type VariablePart = {
   part: string;
   context?: string;
 } & (
-  | { kind: "direct"; variables: readonly EditableThemeVariable[] }
+  | { kind: "direct" | "reference"; variables: readonly EditableThemeVariable[] }
   | { kind: "derived"; variable: `--${string}`; sources: readonly EditableThemeVariable[] }
 );
 
@@ -44,10 +44,16 @@ const DETAILED_GUIDES: Partial<Record<ReactComponentSlug, ComponentVariableGuide
       { part: "Corner radius", kind: "direct", variables: ["--field-radius"] },
       { part: "Hover background", context: "primary", kind: "derived",
         variable: "--field-hover", sources: ["--field-background", "--field-foreground"] },
+      { part: "Focus background", context: "primary", kind: "derived",
+        variable: "--field-focus", sources: ["--field-background"] },
+      { part: "Hover background", context: "secondary", kind: "derived",
+        variable: "--default-hover", sources: ["--default", "--default-foreground"] },
+      { part: "Hover border", kind: "derived",
+        variable: "--field-border-hover", sources: ["--field-border", "--field-foreground"] },
       { part: "Focus border", kind: "derived",
         variable: "--field-border-focus", sources: ["--field-border", "--field-foreground"] },
       { part: "Focus ring", kind: "direct", variables: ["--focus"] },
-      { part: "Error indicator", kind: "direct", variables: ["--danger"] },
+      { part: "Invalid-state outline and focus ring", kind: "direct", variables: ["--danger"] },
     ],
   },
   "button": {
@@ -66,11 +72,15 @@ const DETAILED_GUIDES: Partial<Record<ReactComponentSlug, ComponentVariableGuide
       { part: "Corner radius", kind: "direct", variables: ["--radius"] },
       { part: "Background", context: "danger", kind: "direct", variables: ["--danger"] },
       { part: "Text and icons", context: "danger", kind: "direct", variables: ["--danger-foreground"] },
+      { part: "Hover background", context: "danger", kind: "derived",
+        variable: "--danger-hover", sources: ["--danger", "--danger-foreground"] },
       { part: "Hover background", context: "ghost", kind: "direct", variables: ["--default"] },
-      { part: "Hover background", context: "outline, mezclado con transparencia", kind: "direct", variables: ["--default"] },
+      { part: "Hover background", context: "outline, mixed with transparency", kind: "direct", variables: ["--default"] },
       { part: "Text and icons", context: "ghost / outline", kind: "direct", variables: ["--default-foreground"] },
       { part: "Soft background", context: "danger-soft", kind: "derived",
         variable: "--danger-soft", sources: ["--danger"] },
+      { part: "Text and icons", context: "danger-soft", kind: "derived",
+        variable: "--danger-soft-foreground", sources: ["--danger", "--foreground"] },
     ],
   },
   "button-group": {
@@ -106,7 +116,7 @@ export function getComponentVariableGuide(slug: ReactComponentSlug): ComponentVa
   const doc = REACT_COMPONENT_SOURCES[slug];
   const detailed = DETAILED_GUIDES[slug];
   const knownParts = detailed?.parts ?? [];
-  const knownTokens = new Set(knownParts.flatMap((part) => part.kind === "direct" ? part.variables : part.sources));
+  const knownTokens = new Set(knownParts.flatMap((part) => part.kind === "derived" ? part.sources : part.variables));
   const remaining = doc.tokens.filter((token) => !knownTokens.has(token));
   return {
     title: doc.name,
@@ -114,6 +124,6 @@ export function getComponentVariableGuide(slug: ReactComponentSlug): ComponentVa
     source: "style" in doc ? sourcePath + doc.style : undefined,
     relatedStyles: "related" in doc ? doc.related : undefined,
     ...detailed,
-    parts: remaining.length ? [...knownParts, { part: "", kind: "direct", variables: remaining }] : knownParts,
+    parts: remaining.length ? [...knownParts, { part: "CSS dependency", kind: "reference", variables: remaining }] : knownParts,
   };
 }

@@ -48,6 +48,7 @@ export function exportThemeCss(theme: ThemeConfig, platform: ThemePlatform = 'we
   return [
     '/* HeroUI React v3 · Editable CSS (import after @heroui/styles) */',
     '/* Load the custom font specified in --font-sans in your application. */',
+    '/* To use the exported --scrollbar color, set --scrollbar-color to var(--scrollbar) var(--scrollbar-track). */',
     '',
     webModeCss(theme, 'light'),
     '',

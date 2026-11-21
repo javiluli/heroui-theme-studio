@@ -19,7 +19,7 @@ describe("HeroUI component variable guides", () => {
         expect(guide.source).toMatch(/^https:\/\/github\.com\/heroui-inc\/heroui\/blob\/v3\/packages\/styles\/components\/.+\.css$/);
       }
       for (const part of guide.parts) {
-        for (const token of part.kind === "direct" ? part.variables : part.sources) {
+        for (const token of part.kind === "derived" ? part.sources : part.variables) {
           expect(editable.has(token)).toBe(true);
         }
       }
@@ -28,10 +28,16 @@ describe("HeroUI component variable guides", () => {
 
   it("resolves both semantic CSS aliases and composed styles", () => {
     expect(getComponentVariableGuide("badge").parts).toContainEqual(expect.objectContaining({
+      kind: "reference",
       variables: expect.arrayContaining(["--success", "--success-foreground"]),
     }));
     expect(getComponentVariableGuide("form").parts).toContainEqual(expect.objectContaining({
-      variables: expect.arrayContaining(["--field-radius"]),
+      kind: "reference",
+      variables: expect.arrayContaining(["--field-radius", "--danger"]),
+    }));
+    expect(getComponentVariableGuide("scroll-shadow").parts).toContainEqual(expect.objectContaining({
+      kind: "reference",
+      variables: expect.arrayContaining(["--scrollbar"]),
     }));
   });
 

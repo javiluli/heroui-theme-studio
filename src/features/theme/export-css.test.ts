@@ -37,14 +37,19 @@ describe('HeroUI v3 OSS theme contract', () => {
     expect(theme.palettes.dark['surface-tertiary-foreground']).toBe('var(--foreground)');
   });
 
-  it('matches all editable links against the installed HeroUI React CSS in each mode', () => {
+  it('matches every editable default and link against the installed HeroUI React CSS', () => {
     const require = createRequire(import.meta.url);
     const css = readFileSync(require.resolve('@heroui/styles/themes/default/variables.css'), 'utf8');
+    const shared = cssVariables(css.split('/* == Light Theme Variables == */')[0]);
+    const defaults = createPreset();
     const linked = withNativeColorLinks(createPreset('heroui-builder'));
     for (const mode of ['light', 'dark'] as const) {
       const heading = mode === 'light' ? 'Light' : 'Dark';
       const block = css.split(`/* == ${heading} Theme Variables == */`)[1].split('/* Calculated Colors */')[0];
       const variables = cssVariables(block);
+      for (const token of COLOR_TOKENS) {
+        expect(defaults.palettes[mode][token], `${mode}/${token}`).toBe(variables[token] ?? shared[token]);
+      }
       const links = editableAliases(variables);
       expect(variables.scrollbar).toBe('var(--scrollbar-thumb)');
       expect(variables['scrollbar-thumb']).toBe('color-mix(in oklch, var(--foreground) 15%, transparent)');

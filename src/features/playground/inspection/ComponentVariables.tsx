@@ -9,7 +9,7 @@ export function ComponentVariables({ guide }: { guide: ComponentVariableGuide })
   for (const part of guide.parts) {
     const context = part.context ? ` · ${part.context}` : "";
     const derived = part.kind === "derived" ? ` via ${part.variable}` : "";
-    for (const variable of part.kind === "direct" ? part.variables : part.sources) {
+    for (const variable of part.kind === "derived" ? part.sources : part.variables) {
       const existing = uses.get(variable) ?? new Set<string>();
       if (part.part) existing.add(part.part + context + derived);
       uses.set(variable, existing);
@@ -27,7 +27,7 @@ export function ComponentVariables({ guide }: { guide: ComponentVariableGuide })
         ))}
       </div>
       {guide.note && <p className="text-xs text-muted">{guide.note}</p>}
-      {uses.size === 0 && <p className="text-xs text-muted">This component does not reference editable tokens directly. The example inherits colors and typography.</p>}
+      {uses.size === 0 && <p className="text-xs text-muted">No editable token references were found in the inspected styles. The example may still inherit colors and typography.</p>}
       <ul className="grid min-w-0 gap-x-5 md:grid-cols-2">
         {[...uses].map(([variable, contexts]) => (
           <li key={variable} className="min-w-0 border-b border-separator py-1.5 text-xs">

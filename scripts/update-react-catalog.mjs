@@ -19,8 +19,20 @@ const aliases = new Map();
 for (const [, name, value] of theme.matchAll(/^\s*(--[\w-]+):\s*([^;]+);/gm)) {
   aliases.set(name, [...(aliases.get(name) ?? []), ...cssRefs(value)]);
 }
-const rules = new Map([...utilities.matchAll(/@utility\s+([\w-]+)\s*\{([^{}]*)\}/g)]
-  .map(([, name, body]) => [name, body]));
+// The preview maps the editable scrollbar color to HeroUI's scrollbar utility.
+aliases.set("--scrollbar-color", ["--scrollbar"]);
+const rules = new Map();
+for (const match of utilities.matchAll(/@utility\s+([\w-]+)\s*\{/g)) {
+  const start = match.index + match[0].length;
+  let end = start;
+  let depth = 1;
+  for (; end < utilities.length && depth > 0; end++) {
+    if (utilities[end] === "{") depth++;
+    if (utilities[end] === "}") depth--;
+  }
+  assert.equal(depth, 0, `Unclosed CSS utility ${match[1]}`);
+  rules.set(match[1], utilities.slice(start, end - 1));
+}
 // Styles of native slots actually composed by these gallery examples.
 const slots = {
   "avatar-group": ["avatar.css"],
