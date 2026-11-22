@@ -2,14 +2,16 @@ import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } fr
 import {
   Button,
   ColorArea,
+  ColorField,
   ColorPicker,
   ColorSlider,
   ColorSwatch,
+  Label,
   Tooltip,
   parseColor,
   type Color,
 } from "@heroui/react";
-import { Info, RotateCcw } from "lucide-react";
+import { Info, RotateCcw, Shuffle } from "lucide-react";
 import type { ColorToken } from "../model";
 import { cssColorValue } from "../conversion";
 import { TOKEN_DESCRIPTIONS } from "../token-descriptions";
@@ -24,6 +26,11 @@ interface ColorControlProps {
   onChange: (token: ColorToken, color: string) => void;
   onPreview: (token: ColorToken, color: string) => void;
   onClearPreview: (token: ColorToken) => void;
+}
+
+function pickerHex(color: Color): string {
+  const format = Math.round(color.getChannelValue("alpha") * 255) === 255 ? "hex" : "hexa";
+  return color.toString(format).toUpperCase();
 }
 
 /** Color tiles use HeroUI's native picker; only layout lives in our wrappers. */
@@ -58,21 +65,31 @@ export const ColorControl = memo(function ColorControl({
 
   const changeColor = (next: Color) => {
     setPickerColor(next.toFormat("hsb"));
-    const selectedHex = next.toString("hex").toUpperCase();
-    onPreview(token, selectedHex === hex && value !== "transparent" ? value : selectedHex);
+    const selectedHex = pickerHex(next);
+    onPreview(token, selectedHex === hex ? value : selectedHex);
   };
 
   const commitColor = (next: Color) => {
-    const selectedHex = next.toString("hex").toUpperCase();
-    if (selectedHex !== hex || value === "transparent") {
+    const selectedHex = pickerHex(next);
+    if (selectedHex !== hex) {
       lastSentHex.current = selectedHex;
       onChange(token, selectedHex);
     } else onClearPreview(token);
   };
 
-  const swatchColor = value === "transparent" && pickerColor.toString("hex").toUpperCase() === hex
-    ? "#00000000"
-    : pickerColor;
+  const applyRgbColor = (next: Color) => {
+    const adjusted = next.withChannelValue("alpha", pickerColor.getChannelValue("alpha")).toFormat("hsb");
+    setPickerColor(adjusted);
+    commitColor(adjusted);
+  };
+
+  const shuffleColor = () => {
+    const hue = Math.floor(Math.random() * 360);
+    const saturation = 50 + Math.floor(Math.random() * 50);
+    const lightness = 40 + Math.floor(Math.random() * 30);
+    applyRgbColor(parseColor(`hsl(${hue}, ${saturation}%, ${lightness}%)`));
+  };
+
   return (
     <EditorTokenTarget
       variable={`--${token}`}
@@ -95,7 +112,7 @@ export const ColorControl = memo(function ColorControl({
             <span className="flex min-h-9 w-full min-w-0 items-center gap-1 px-1 py-1.5 text-left">
               <span className="shrink-0" aria-hidden="true">
                 <ColorSwatch
-                  color={swatchColor}
+                  color={pickerColor}
                   size="xs"
                   style={{ "--color-swatch-current": `var(--${token})` } as CSSProperties}
                 />
@@ -114,13 +131,12 @@ export const ColorControl = memo(function ColorControl({
             } as CSSProperties : undefined}
           >
             <div className="flex min-w-0 w-full flex-col gap-3 p-1">
-              <div className="flex min-w-0 items-start gap-2">
-                <ColorSwatch color={swatchColor} size="md" />
-                <code className="min-w-0 flex-1 break-all whitespace-normal text-xs font-semibold text-foreground">
-                  --{token}
-                </code>
-              </div>
+              <code className="min-w-0 break-all whitespace-normal text-xs font-semibold text-foreground">
+                --{token}
+              </code>
               <ColorArea
+                aria-label="Saturation and brightness"
+                className="max-w-full"
                 colorSpace="hsb"
                 xChannel="saturation"
                 yChannel="brightness"
@@ -128,20 +144,38 @@ export const ColorControl = memo(function ColorControl({
               >
                 <ColorArea.Thumb />
               </ColorArea>
-              <ColorSlider channel="hue" colorSpace="hsb" onChangeEnd={commitColor}>
-                <ColorSlider.Track>
-                  <ColorSlider.Thumb />
-                </ColorSlider.Track>
-              </ColorSlider>
-              {token === "field-border" && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onPress={() => onChange(token, "transparent")}
-                >
-                  Transparent
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <ColorSlider aria-label="Hue" channel="hue" colorSpace="hsb" onChangeEnd={commitColor}>
+                    <ColorSlider.Track>
+                      <ColorSlider.Thumb />
+                    </ColorSlider.Track>
+                  </ColorSlider>
+                </div>
+                <Button isIconOnly size="sm" variant="tertiary" aria-label="Shuffle color" onPress={shuffleColor}>
+                  <Shuffle size={16} aria-hidden="true" />
                 </Button>
+              </div>
+              {token === "field-border" && (
+                <ColorSlider channel="alpha" onChangeEnd={commitColor}>
+                  <Label>Alpha</Label>
+                  <ColorSlider.Output />
+                  <ColorSlider.Track>
+                    <ColorSlider.Thumb />
+                  </ColorSlider.Track>
+                </ColorSlider>
               )}
+              <ColorField
+                slot={null}
+                aria-label={`Hex color for --${token}`}
+                value={pickerColor}
+                onChange={(next) => { if (next) applyRgbColor(next); }}
+              >
+                <ColorField.Group variant="secondary">
+                  <ColorField.Prefix><ColorSwatch color={pickerColor} size="xs" /></ColorField.Prefix>
+                  <ColorField.Input placeholder="Hex color" />
+                </ColorField.Group>
+              </ColorField>
             </div>
           </ColorPicker.Popover>
         </ColorPicker>

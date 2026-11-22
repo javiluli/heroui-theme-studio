@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { colorToHex, cssColorValue, getThemeVariables, hexToOklch, isEditableColor, makeThemeIndependent } from './conversion';
+import { colorToHex, cssColorValue, getThemeVariables, hexToOklch, isEditableColor, isHexColor, makeThemeIndependent } from './conversion';
 import { exportThemeCss } from './export-css';
+import { parseThemeCss } from './import-css';
 import { changeColor } from './reducer';
 import { COLOR_TOKENS } from './model';
 import { createPreset } from './templates';
@@ -123,6 +124,22 @@ describe('HeroUI v3 OSS theme contract', () => {
     }
     expect(getThemeVariables(theme, 'light')['--font-sans']).toContain('Inter');
     expect(getThemeVariables(theme, 'dark')['--font-sans']).toBe('var(--font-inter)');
+  });
+
+  it('round-trips transparent and translucent borders in Web and Native CSS', () => {
+    const theme = createPreset();
+    theme.palettes.light['field-border'] = '#3978BF80';
+    theme.palettes.dark['field-border'] = '#3978BF00';
+    for (const platform of ['web', 'native'] as const) {
+      const css = exportThemeCss(theme, platform);
+      const imported = parseThemeCss(css, createPreset());
+      expect(colorToHex(imported.palettes.light['field-border'])).toBe('#3978BF80');
+      expect(colorToHex(imported.palettes.dark['field-border'])).toBe('#3978BF00');
+    }
+    expect(colorToHex('transparent')).toBe('#00000000');
+    expect(colorToHex('oklch(100% 0 0 / 50%)')).toBe('#FFFFFF80');
+    expect(isEditableColor('oklch(0.6 0.2 200 / 101%)')).toBe(false);
+    expect(isHexColor('#3978BF80')).toBe(false);
   });
 
   it('preserves independent Light and Dark colors', () => {

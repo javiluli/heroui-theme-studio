@@ -49,9 +49,11 @@ describe('legacy color migration', () => {
 
     const saved = createPreset();
     saved.palettes.dark.background = '#050606';
+    saved.palettes.dark['field-border'] = '#3978BF80';
     vi.stubGlobal('window', { localStorage: {
       getItem(key: string) { return key === STORAGE_KEY ? JSON.stringify(saved) : null; },
     } });
     expect(loadTheme().palettes.dark.background).toBe('#050606');
+    expect(loadTheme().palettes.dark['field-border']).toBe('#3978BF80');
   });
 });

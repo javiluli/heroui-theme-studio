@@ -16,7 +16,7 @@
 - WebLLM must load **only on explicit user action**, in its own Worker. Never require an API key or invoke a paid remote model silently.
 - Never apply AI output directly as CSS or arbitrary JS. Whitelist parsed tokens and bounded values; apply only after user approval.
 - Keep keyboard access, visible focus, mobile responsive styles, and reduced motion.
-- Color editor tiles: use HeroUI ColorPicker.Trigger/Popover, ColorSwatch, ColorArea and ColorSlider; exactly two columns per token group, visible CSS variable names only, no HEX or CSS text inputs. Keep transparent action for field-border. Preserve current Theme Builder and library presets. Do not set a fixed inner popover width: HeroUI uses its own min-width. Keep controlled Color objects in HSB during editing and avoid live recoloring of the popover when changing --overlay.
+- Color editor tiles: use HeroUI ColorPicker.Trigger/Popover, ColorSwatch, ColorArea and ColorSlider; exactly two columns per token group, with CSS variable names on the tiles. The popover includes a shuffle action and a HeroUI ColorField for HEX, with no preset swatches or arbitrary CSS input. Show the Alpha slider only for field-border, preserve alpha while editing RGB, and keep the Theme Builder and library theme presets. Do not set a fixed inner popover width: HeroUI uses its own min-width. Keep controlled Color objects in HSB during editing and avoid live recoloring of the popover when changing --overlay.
 ## Theme assistant
 
 - The AI lives in a right-hand conversational panel opened from the header. Keep it mounted while hidden to preserve chat messages and the downloaded model. Never place it before the showcase in main content.

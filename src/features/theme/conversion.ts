@@ -3,6 +3,7 @@ import { LEGACY_DEFAULT_PALETTES } from './legacy-default';
 import { getModeSettings, pixelsToRem } from './mode-layout';
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+const HEX_ALPHA_COLOR = /^#[0-9a-f]{8}$/i;
 const THEME_REFERENCE = /^var\(--(white|black|snow|eclipse|foreground|muted|accent|scrollbar-thumb)\)$/;
 const NATIVE_PRIMITIVES: Record<string, string> = {
   white: 'oklch(100% 0 0)',
@@ -19,7 +20,7 @@ function resolveColor(color: string, palette?: Palette, visited = new Set<string
   if (visited.has(token)) return '#000000';
   visited.add(token);
   if (token === 'scrollbar-thumb') {
-    // CSS color-mix uses alpha, which an opaque HEX picker cannot represent.
+    // The library computes the scrollbar tint from the main text color.
     return resolveColor(palette?.foreground ?? NATIVE_PRIMITIVES.eclipse, palette, visited);
   }
   const next = NATIVE_PRIMITIVES[token] ?? palette?.[token as keyof Palette];
@@ -43,27 +44,29 @@ export function makeThemeIndependent(theme: ThemeConfig): ThemeConfig {
   return { ...theme, palettes: { light: independentPalette('light'), dark: independentPalette('dark') } };
 }
 
-const OKLCH_COLOR = /^oklch\(\s*(\d+(?:\.\d+)?%?)\s+(\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\)$/i;
+const OKLCH_COLOR = /^oklch\(\s*(\d+(?:\.\d+)?%?)\s+(\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\s*\/\s*((?:\d+(?:\.\d+)?|\.\d+)%?))?\s*\)$/i;
 
 export function isHexColor(value: unknown): boolean {
   return typeof value === 'string' && HEX_COLOR.test(value);
 }
 
 export function isEditableColor(value: unknown): value is string {
-  if (value === 'transparent') return true;
-  if (typeof value === 'string' && THEME_REFERENCE.test(value)) return true;
-  if (isHexColor(value)) return true;
-  return typeof value === 'string' && parseOklch(value) !== null;
+  return typeof value === 'string' && (
+    value === 'transparent' || THEME_REFERENCE.test(value) ||
+    HEX_COLOR.test(value) || HEX_ALPHA_COLOR.test(value) || parseOklch(value) !== null
+  );
 }
 
-function parseOklch(value: string): { l: number; c: number; h: number } | null {
+function parseOklch(value: string): { l: number; c: number; h: number; alpha: number } | null {
   const match = OKLCH_COLOR.exec(value);
   if (!match) return null;
   const l = match[1].endsWith('%') ? Number(match[1].slice(0, -1)) / 100 : Number(match[1]);
   const c = Number(match[2]);
   const h = Number(match[3]);
-  return l >= 0 && l <= 1 && c >= 0 && c <= 0.5 && Number.isFinite(h) && Math.abs(h) <= 360
-    ? { l, c, h }
+  const opacity = match[4] ?? '1';
+  const alpha = opacity.endsWith('%') ? Number(opacity.slice(0, -1)) / 100 : Number(opacity);
+  return l >= 0 && l <= 1 && c >= 0 && c <= 0.5 && Math.abs(h) <= 360 && alpha >= 0 && alpha <= 1
+    ? { l, c, h, alpha }
     : null;
 }
 
@@ -80,7 +83,7 @@ function delinearize(channel: number): number {
 
 /** Transform user-editable HEX values to HeroUI's native OKLCH representation. */
 export function hexToOklch(hex: string): string {
-  if (!isHexColor(hex)) throw new Error('Invalid 6-digit hex color');
+  if (!isHexColor(hex) && !HEX_ALPHA_COLOR.test(hex)) throw new Error('Invalid hex color');
   const r = linearize(parseInt(hex.slice(1, 3), 16));
   const g = linearize(parseInt(hex.slice(3, 5), 16));
   const b = linearize(parseInt(hex.slice(5, 7), 16));
@@ -92,13 +95,20 @@ export function hexToOklch(hex: string): string {
   const bb = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
   const c = Math.hypot(a, bb);
   const h = c < 0.000001 ? 0 : (Math.atan2(bb, a) * 180 / Math.PI + 360) % 360;
-  return 'oklch(' + L.toFixed(8) + ' ' + c.toFixed(8) + ' ' + h.toFixed(5) + ')';
+  const alpha = hex.length === 9 ? parseInt(hex.slice(7, 9), 16) / 255 : 1;
+  const opacity = alpha < 1 ? ' / ' + Number(alpha.toFixed(8)) : '';
+  return 'oklch(' + L.toFixed(8) + ' ' + c.toFixed(8) + ' ' + h.toFixed(5) + opacity + ')';
 }
 
 /** sRGB preview; never round-trip original OKLCH or CSS references. */
 export function colorToHex(color: string, palette?: Palette): string {
   const resolved = resolveColor(color, palette);
+  if (resolved === 'transparent') return '#00000000';
   if (isHexColor(resolved)) return resolved.toUpperCase();
+  if (HEX_ALPHA_COLOR.test(resolved)) {
+    const hex = resolved.toUpperCase();
+    return hex.endsWith('FF') ? hex.slice(0, 7) : hex;
+  }
   const oklch = parseOklch(resolved);
   if (!oklch) return '#000000';
 
@@ -112,12 +122,15 @@ export function colorToHex(color: string, palette?: Palette): string {
     -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
     -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
   ];
-  return '#' + rgb.map((channel) => delinearize(channel).toString(16).padStart(2, '0')).join('').toUpperCase();
+  const channels = rgb.map(delinearize);
+  const alpha = Math.round(oklch.alpha * 255);
+  if (alpha < 255) channels.push(alpha);
+  return '#' + channels.map((channel) => channel.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
 /** Keep official OKLCH values intact; only convert user-entered HEX values. */
 export function cssColorValue(color: string): string {
-  return isHexColor(color) ? hexToOklch(color) : color;
+  return isHexColor(color) || HEX_ALPHA_COLOR.test(color) ? hexToOklch(color) : color;
 }
 
 export function getThemeVariables(theme: ThemeConfig, mode: ThemeMode): Record<string, string> {

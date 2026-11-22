@@ -93,14 +93,16 @@ describe("Reusable layout wrappers", () => {
     expect(control).toContain("<ColorSlider");
     expect(control).toContain("wrap-anywhere");
     expect(control).toContain("--{token}");
-    expect(control).toContain('"#00000000"');
-    expect(control).toContain('onPress={() => onChange(token, "transparent")}');
-    expect(control.match(/onChangeEnd=\{commitColor\}/g)).toHaveLength(2);
+    expect(control).toMatch(/token === "field-border"[\s\S]*?<ColorSlider channel="alpha"/);
+    expect(control).not.toContain('onPress={() => onChange(token, "transparent")}');
+    expect(control.match(/onChangeEnd=\{commitColor\}/g)).toHaveLength(3);
     expect(control).not.toContain("w-64");
     expect(control).not.toContain("w-72");
     expect(control).not.toContain("<Input");
     expect(control).not.toContain("<TextField");
-    expect(control).not.toContain("<ColorField");
+    expect(control).toContain("<ColorField.Input");
+    expect(control).toContain("onPress={shuffleColor}");
+    expect(control).not.toContain("<ColorSwatchPicker");
     expect(editor).toContain('<ThemeSettingsPanel');
   });
 
