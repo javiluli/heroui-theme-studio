@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Copy, Download } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { Button, Modal } from "@heroui/react";
 import type { ThemePlatform } from "../export-css";
 
@@ -22,18 +22,6 @@ export function ExportPanel({ css, platform, onClose }: ExportPanelProps) {
     } catch {
       setCopyError(true);
     }
-  };
-
-  const downloadCss = () => {
-    const blob = new Blob([css], { type: "text/css;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `heroui-theme-${platform}.css`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -63,8 +51,7 @@ export function ExportPanel({ css, platform, onClose }: ExportPanelProps) {
               </pre>
               {copyError && (
                 <p className="text-xs text-danger" role="alert">
-                  Could not copy to the clipboard. Select the text or
-                  download the file.
+                  Could not copy to the clipboard. Select the CSS text and copy it manually.
                 </p>
               )}
             </div>
@@ -73,9 +60,6 @@ export function ExportPanel({ css, platform, onClose }: ExportPanelProps) {
             <Button variant="secondary" onPress={copyCss}>
               {copied ? <Check size={16} /> : <Copy size={16} />}{" "}
               {copied ? "Copied" : "Copy CSS"}
-            </Button>
-            <Button variant="primary" onPress={downloadCss}>
-              <Download size={16} /> Download .css
             </Button>
           </Modal.Footer>
         </Modal.Dialog>
