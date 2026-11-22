@@ -31,7 +31,6 @@ import {
   Slider,
   Spinner,
   Surface,
-  Switch,
   Tabs,
   TagGroup,
   TextArea,
@@ -39,9 +38,13 @@ import {
   Typography,
   useToast,
 } from "heroui-native";
-import { useState, type ComponentType } from "react";
+import { useCallback, useState, type ComponentType } from "react";
 import { LinearGradient } from "expo-linear-gradient";
-import { Linking, ScrollView, View } from "react-native";
+import { Linking, ScrollView, useWindowDimensions, View } from "react-native";
+import { PreviewDialog } from "./PreviewDialog";
+import { PreviewInputOTP } from "./PreviewInputOTP";
+import { PreviewSliderThumb } from "./PreviewSliderThumb";
+import { PreviewSwitch } from "./PreviewSwitch";
 
 function ButtonExample() {
   const [pressed, setPressed] = useState(false);
@@ -76,7 +79,7 @@ function CheckboxExample() {
 function SwitchExample() {
   const [selected, setSelected] = useState(true);
   return (
-    <Switch
+    <PreviewSwitch
       accessibilityLabel="Notifications"
       isSelected={selected}
       onSelectedChange={setSelected}
@@ -92,7 +95,7 @@ function ControlFieldExample() {
         <Label>Notifications</Label>
         <Description>Project updates</Description>
       </View>
-      <ControlField.Indicator />
+      <ControlField.Indicator><PreviewSwitch accessibilityLabel="Project updates" /></ControlField.Indicator>
     </ControlField>
   );
 }
@@ -100,8 +103,8 @@ function ControlFieldExample() {
 function CloseButtonExample() {
   const [open, setOpen] = useState(true);
   return open ? (
-    <View className="flex-row items-center justify-between">
-      <Typography>Sample notification</Typography>
+    <View className="flex-row items-center justify-between gap-2">
+      <View className="min-w-0 flex-1"><Typography>Sample notification</Typography></View>
       <CloseButton
         accessibilityLabel="Dismiss notification"
         onPress={() => setOpen(false)}
@@ -144,7 +147,7 @@ function SelectExample() {
   const [value, setValue] = useState<{ label: string; value: string }>();
   return (
     <Select value={value} onValueChange={setValue}>
-      <Select.Trigger>
+      <Select.Trigger accessibilityLabel="City">
         <Select.Value placeholder="Select a city" />
         <Select.TriggerIndicator />
       </Select.Trigger>
@@ -195,6 +198,112 @@ function ToastExample() {
   );
 }
 
+function MenuExample() {
+  const { toast } = useToast();
+  const { width } = useWindowDimensions();
+  return (
+    <Menu>
+      <Menu.Trigger asChild>
+        <Button variant="secondary">Actions</Button>
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Overlay />
+        <Menu.Content presentation="popover" width={Math.min(210, width - 24)}>
+          <Menu.Item id="edit" onPress={() => toast.show({ label: "Editing project" })}>
+            <Menu.ItemTitle>Edit</Menu.ItemTitle>
+          </Menu.Item>
+          <Menu.Item id="duplicate" onPress={() => toast.show({ variant: "success", label: "Project duplicated" })}>
+            <Menu.ItemTitle>Duplicate</Menu.ItemTitle>
+          </Menu.Item>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu>
+  );
+}
+
+function SliderExample() {
+  const [value, setValue] = useState(40);
+  return (
+    <View className="gap-2">
+      <Slider value={value} step={5} onChange={(next) => { if (typeof next === "number") setValue(next); }}>
+        <Slider.Output />
+        <Slider.Track>
+          <Slider.Fill />
+          <PreviewSliderThumb label="Volume" value={value} max={100} step={5} onChange={setValue} />
+        </Slider.Track>
+      </Slider>
+      <View className="flex-row flex-wrap gap-2">
+        <Button variant="outline" size="sm" isDisabled={value === 0} onPress={() => setValue((current) => current - 5)}>
+          Decrease
+        </Button>
+        <Button variant="outline" size="sm" isDisabled={value === 100} onPress={() => setValue((current) => current + 5)}>
+          Increase
+        </Button>
+      </View>
+    </View>
+  );
+}
+
+function DialogExample() {
+  const [open, setOpen] = useState(false);
+  const dismiss = useCallback(() => setOpen(false), []);
+  return (
+    <Dialog isOpen={open} onOpenChange={setOpen}>
+      <Dialog.Trigger asChild><Button>Open dialog</Button></Dialog.Trigger>
+      <PreviewDialog title="Confirm changes" description="This dialog uses the theme colors." onDismiss={dismiss}>
+        <Button onPress={dismiss}>Done</Button>
+      </PreviewDialog>
+    </Dialog>
+  );
+}
+
+function PopoverExample() {
+  const { width } = useWindowDimensions();
+  return (
+    <Popover>
+      <Popover.Trigger asChild><Button variant="secondary">View details</Button></Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Overlay />
+        <Popover.Content presentation="popover" width={Math.min(235, width - 24)}>
+          <Popover.Title>More information</Popover.Title>
+          <Popover.Description>Overlay preview.</Popover.Description>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover>
+  );
+}
+
+function OtpExample() {
+  const { width } = useWindowDimensions();
+  const slotWidth = Math.min(44, Math.floor((width - 88) / 4));
+  return (
+    <PreviewInputOTP maxLength={4} textInputProps={{ accessibilityLabel: "Verification code" }}>
+      <InputOTP.Group>
+        {[0, 1, 2, 3].map((index) => <InputOTP.Slot key={index} index={index} style={{ width: slotWidth }} />)}
+      </InputOTP.Group>
+    </PreviewInputOTP>
+  );
+}
+
+function BottomSheetExample() {
+  const { height } = useWindowDimensions();
+  return (
+    <BottomSheet>
+      <BottomSheet.Trigger asChild><Button>Show sheet</Button></BottomSheet.Trigger>
+      <BottomSheet.Portal>
+        <BottomSheet.Overlay />
+        <BottomSheet.Content enableDynamicSizing={false} snapPoints={[height < 440 ? "75%" : "38%"]}>
+          <View className="flex-row items-start justify-between gap-2">
+            <View className="min-w-0 flex-1"><BottomSheet.Title>Theme details</BottomSheet.Title></View>
+            <View className="shrink-0"><BottomSheet.Close variant="ghost" accessibilityLabel="Close sheet" /></View>
+          </View>
+          <BottomSheet.Description>A sample bottom sheet.</BottomSheet.Description>
+        </BottomSheet.Content>
+      </BottomSheet.Portal>
+    </BottomSheet>
+  );
+}
+
 export const nativeExamples = {
   Accordion: () => (
     <Accordion>
@@ -228,23 +337,7 @@ export const nativeExamples = {
       </Avatar>
     </View>
   ),
-  BottomSheet: () => (
-    <BottomSheet>
-      <BottomSheet.Trigger asChild>
-        <Button>Show sheet</Button>
-      </BottomSheet.Trigger>
-      <BottomSheet.Portal>
-        <BottomSheet.Overlay />
-        <BottomSheet.Content enableDynamicSizing={false} snapPoints={["38%"]}>
-          <BottomSheet.Close />
-          <BottomSheet.Title>Theme details</BottomSheet.Title>
-          <BottomSheet.Description>
-            A sample bottom sheet.
-          </BottomSheet.Description>
-        </BottomSheet.Content>
-      </BottomSheet.Portal>
-    </BottomSheet>
-  ),
+  BottomSheet: BottomSheetExample,
   Button: ButtonExample,
   Card: () => (
     <Card>
@@ -273,23 +366,7 @@ export const nativeExamples = {
   Description: () => (
     <Description>The name will appear in the project.</Description>
   ),
-  Dialog: () => (
-    <Dialog>
-      <Dialog.Trigger asChild>
-        <Button>Open dialog</Button>
-      </Dialog.Trigger>
-      <Dialog.Portal>
-        <Dialog.Overlay />
-        <Dialog.Content>
-          <Dialog.Close />
-          <Dialog.Title>Confirm changes</Dialog.Title>
-          <Dialog.Description>
-            This dialog uses the theme colors.
-          </Dialog.Description>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog>
-  ),
+  Dialog: DialogExample,
   FieldError: () => (
     <FieldError isInvalid>Enter a valid code.</FieldError>
   ),
@@ -311,18 +388,7 @@ export const nativeExamples = {
       />
     </InputGroup>
   ),
-  InputOTP: () => (
-    <InputOTP
-      maxLength={4}
-      textInputProps={{ accessibilityLabel: "Verification code" }}
-    >
-      <InputOTP.Group>
-        {[0, 1, 2, 3].map((index) => (
-          <InputOTP.Slot key={index} index={index} />
-        ))}
-      </InputOTP.Group>
-    </InputOTP>
-  ),
+  InputOTP: OtpExample,
   Label: () => <Label isRequired>Username</Label>,
   LinkButton: () => (
     <LinkButton
@@ -345,40 +411,8 @@ export const nativeExamples = {
       </ListGroup.Item>
     </ListGroup>
   ),
-  Menu: () => (
-    <Menu>
-      <Menu.Trigger asChild>
-        <Button variant="secondary">Actions</Button>
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Overlay />
-        <Menu.Content presentation="popover" width={210}>
-          <Menu.Item id="edit">
-            <Menu.ItemTitle>Edit</Menu.ItemTitle>
-          </Menu.Item>
-          <Menu.Item id="duplicate">
-            <Menu.ItemTitle>Duplicate</Menu.ItemTitle>
-          </Menu.Item>
-        </Menu.Content>
-      </Menu.Portal>
-    </Menu>
-  ),
-  Popover: () => (
-    <Popover>
-      <Popover.Trigger asChild>
-        <Button variant="secondary">View details</Button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Overlay />
-        <Popover.Content presentation="popover" width={235}>
-          <Popover.Title>More information</Popover.Title>
-          <Popover.Description>
-            Overlay preview.
-          </Popover.Description>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover>
-  ),
+  Menu: MenuExample,
+  Popover: PopoverExample,
   PressableFeedback: () => (
     <PressableFeedback
       accessibilityRole="button"
@@ -415,24 +449,16 @@ export const nativeExamples = {
       <Typography>Preferences</Typography>
     </View>
   ),
-  Skeleton: () => <Skeleton className="h-6 w-44 rounded-md" />,
+  Skeleton: () => <Skeleton className="h-6 w-full max-w-44 rounded-md" />,
   SkeletonGroup: () => (
     <SkeletonGroup isLoading>
       <View className="gap-2">
-        <SkeletonGroup.Item className="h-6 w-44 rounded-md" />
-        <SkeletonGroup.Item className="h-4 w-36 rounded-md" />
+        <SkeletonGroup.Item className="h-6 w-full max-w-44 rounded-md" />
+        <SkeletonGroup.Item className="h-4 w-full max-w-36 rounded-md" />
       </View>
     </SkeletonGroup>
   ),
-  Slider: () => (
-    <Slider defaultValue={40}>
-      <Slider.Output />
-      <Slider.Track>
-        <Slider.Fill />
-        <Slider.Thumb />
-      </Slider.Track>
-    </Slider>
-  ),
+  Slider: SliderExample,
   Spinner: () => <Spinner accessibilityLabel="Loading data" />,
   Surface: () => (
     <Surface variant="secondary" className="p-4">
@@ -450,12 +476,12 @@ export const nativeExamples = {
     </TagGroup>
   ),
   TextArea: () => (
-    <TextArea placeholder="Write a note" accessibilityLabel="Nota" />
+    <TextArea placeholder="Write a note" accessibilityLabel="Note" />
   ),
   TextField: () => (
     <TextField isRequired>
       <Label>Email</Label>
-      <Input placeholder="nombre@ejemplo.com" />
+      <Input placeholder="you@example.com" accessibilityLabel="Email" />
       <Description>For account notifications.</Description>
     </TextField>
   ),

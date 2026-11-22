@@ -20,19 +20,26 @@ function updateAnimationColors(root: HTMLElement, pixel: CanvasRenderingContext2
 }
 
 export function usePreviewTheme() {
-  const embedded = typeof window !== "undefined" && window.parent !== window;
-  const [themeReady, setThemeReady] = useState(!embedded);
+  const isWeb = typeof window !== "undefined" && typeof document !== "undefined";
+  const embedded = isWeb && window.parent !== window;
+  const [themeReady, setThemeReady] = useState(!isWeb);
 
   useEffect(() => {
-    if (!embedded) return;
-    const origin = window.location.origin;
-    const ready = () => window.parent.postMessage(PREVIEW_READY, origin);
-    const applied: Partial<Record<PreviewThemeMessage["mode"], Record<string, string>>> = {};
-    let activeMode: PreviewThemeMessage["mode"] | undefined;
+    if (!isWeb) return;
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 1;
     const pixel = canvas.getContext("2d", { willReadFrequently: true });
     const root = document.documentElement;
+    if (!embedded) {
+      if (pixel) updateAnimationColors(root, pixel);
+      setThemeReady(true);
+      return;
+    }
+
+    const origin = window.location.origin;
+    const ready = () => window.parent.postMessage(PREVIEW_READY, origin);
+    const applied: Partial<Record<PreviewThemeMessage["mode"], Record<string, string>>> = {};
+    let activeMode: PreviewThemeMessage["mode"] | undefined;
     const receiveTheme = (event: MessageEvent) => {
       if (event.origin !== origin || event.source !== window.parent) return;
       if (event.data === PREVIEW_PING) {
@@ -62,7 +69,7 @@ export function usePreviewTheme() {
     window.addEventListener("message", receiveTheme);
     ready();
     return () => window.removeEventListener("message", receiveTheme);
-  }, [embedded]);
+  }, [embedded, isWeb]);
 
   useEffect(() => {
     if (embedded && themeReady) window.parent.postMessage(PREVIEW_RENDERED, window.location.origin);

@@ -132,9 +132,11 @@ export default function NativePreviewPage({
       </header>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 rounded-[calc(var(--radius)+var(--spacing)*2)] bg-surface p-2">
-        <div className="flex shrink-0 flex-wrap items-end gap-2 px-2 pt-1">
-          <div className="min-w-0 grow basis-48 lg:max-w-64">
-            <Select fullWidth selectedKey={device === "custom" ? device : device.id}
+        <div className="@container/devices shrink-0 px-2 pt-1">
+          <div className={device === "custom"
+            ? "grid max-w-xl grid-cols-[minmax(0,1.35fr)_repeat(2,minmax(0,1fr))] items-center gap-2 @min-[28rem]/devices:grid-cols-[minmax(0,1.9fr)_repeat(2,minmax(0,1fr))]"
+            : "max-w-64"}>
+            <Select fullWidth variant="secondary" selectedKey={device === "custom" ? device : device.id}
               onSelectionChange={(key) => {
                 if (key === "custom") {
                   setCustomSize((current) => current ?? { width: size.width, height: size.height });
@@ -144,17 +146,24 @@ export default function NativePreviewPage({
                   if (preset) setDevice(preset);
                 }
               }}>
-              <Label>
-                Device size
-                {device !== "custom" && <span className="ms-2 whitespace-nowrap text-xs text-muted">{size.width} × {size.height} CSS px</span>}
-              </Label>
-              <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
+              <Label className="sr-only">Device size</Label>
+              <Select.Trigger>
+                <Select.Value>
+                  <span className="flex flex-wrap items-baseline gap-x-2">
+                    <span>{device === "custom" ? "Custom" : device.label}</span>
+                    <span className={`whitespace-nowrap text-xs text-muted ${device === "custom" ? "hidden @min-[28rem]/devices:inline" : ""}`}>
+                      {size.width} × {size.height} px
+                    </span>
+                  </span>
+                </Select.Value>
+                <Select.Indicator />
+              </Select.Trigger>
               <Select.Popover>
                 <ListBox>
                   {DEVICE_PRESETS.map(({ id, label, width, height }) => (
                     <ListBox.Item key={id} id={id} textValue={label}>
                       <Label>{label}</Label>
-                      <span className="text-xs text-muted">{width} × {height}</span>
+                      <span className="ms-2 text-xs text-muted">{width} × {height}</span>
                       <ListBox.ItemIndicator />
                     </ListBox.Item>
                   ))}
@@ -162,23 +171,28 @@ export default function NativePreviewPage({
                 </ListBox>
               </Select.Popover>
             </Select>
-          </div>
-          {device === "custom" && (
-            <div className="grid min-w-0 grow basis-52 grid-cols-2 gap-2 lg:max-w-64">
-              {(["width", "height"] as const).map((dimension) => (
-                <NumberField key={dimension} fullWidth minValue={160} maxValue={4096} step={1}
+            {device === "custom" && (["width", "height"] as const).map((dimension) => {
+              const label = dimension === "width" ? "Width" : "Height";
+              return (
+                <NumberField key={dimension} fullWidth variant="secondary" aria-label={`${label} (px)`}
+                  minValue={160} maxValue={4096} step={1} formatOptions={{ useGrouping: false }}
                   value={size[dimension]}
                   onChange={(value) => {
                     if (Number.isFinite(value)) {
                       setCustomSize((current) => ({ ...(current ?? size), [dimension]: value }));
                     }
                   }}>
-                  <Label>{dimension === "width" ? "Width (px)" : "Height (px)"}</Label>
-                  <NumberField.Group><NumberField.Input /></NumberField.Group>
+                  <NumberField.Group className="flex h-10 items-center gap-1 ps-2 sm:h-9">
+                    <span className="shrink-0 text-xs text-muted" aria-hidden="true">
+                      <span className="@min-[28rem]/devices:hidden">{label[0]}</span>
+                      <span className="hidden @min-[28rem]/devices:inline">{label}</span>
+                    </span>
+                    <NumberField.Input className="min-w-0 flex-1 px-1" />
+                  </NumberField.Group>
                 </NumberField>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
 
         <div
@@ -193,7 +207,8 @@ export default function NativePreviewPage({
                 <iframe
                   key={attempt}
                   ref={frame}
-                  title="HeroUI Native examples"
+                  title="HeroUI Native preview"
+                  aria-describedby="native-preview-platform-note"
                   src={previewUrl}
                   className={`block h-full w-full border-0 ${status === "ready" ? "" : "invisible"}`}
                   onLoad={() =>
@@ -215,11 +230,11 @@ export default function NativePreviewPage({
                   >
                     {status === "loading" ? (
                       <div className="flex items-center gap-2 text-muted">
-                        <Spinner size="sm" /> Loading examples…
+                        <Spinner size="sm" /> Loading preview…
                       </div>
                     ) : (
                       <>
-                        <p>The HeroUI Native preview took too long to respond.</p>
+                        <p>The Native preview couldn’t load in this browser.</p>
                         <Button variant="secondary" size="sm" onPress={reload}>Reload</Button>
                       </>
                     )}
@@ -229,6 +244,9 @@ export default function NativePreviewPage({
             </div>
           </div>
         </div>
+        <p id="native-preview-platform-note" className="shrink-0 px-2 text-xs text-muted">
+          Runs in Expo Web. Touch gestures, on-screen keyboards, and system dialogs can behave differently on iOS and Android.
+        </p>
       </div>
     </section>
   );

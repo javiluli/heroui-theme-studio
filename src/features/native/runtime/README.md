@@ -1,13 +1,13 @@
-# Visor de HeroUI Native
+# HeroUI Native preview
 
-La vista `?view=native` muestra el catálogo gratuito de HeroUI Native en un marco de teléfono. El visor ejecuta `heroui-native` con Expo Web y React Native Web en un iframe del mismo origen.
+The `?view=native` preview runs `heroui-native` with Expo Web and React Native Web in a same-origin iframe. **Home** adapts the web Collage examples to the phone. **App** shows Dayplan, a sample task app with a form, cards, and working navigation. The App menu opens the searchable **Component library** for individual examples.
 
-Desde la raíz del repositorio, ejecuta `npm install` y `npm run dev`. La instalación prepara las dependencias del visor y el arranque exporta sus archivos a `public/native-runtime/`. Se sirve todo desde la misma URL de Vite. `npm run build` incluye estos archivos en la salida de producción. Si editas el código del visor con Vite en marcha, vuelve a generarlo con `npm run native:build` y pulsa **Recargar visor**.
+Run `npm install` and `npm run dev` from the repository root. The dev and production builds export the preview to `public/native-runtime/`. If you edit the preview while Vite is running, run `npm run native:build` and click **Reload preview**.
 
-El visor recibe el modo y las variables del tema editado en Theme Studio. Uniwind aplica los tokens correspondientes a la muestra y a sus capas flotantes. La biblioteca conserva sus valores para las propiedades que el editor no ofrece.
+The preview receives the active mode and theme variables from Theme Studio. Uniwind applies the tokens to the sample app and its overlays. Other properties use the library defaults.
 
-HeroUI recomienda HeroUI Native para iOS y Android. React Native Web permite revisar el tema y probar interacciones en el navegador. Los gestos, el teclado y las APIs de dispositivo se validan por separado en su plataforma.
+React Native Web lets you inspect theme colors and try interactions in the browser. Verify platform-specific gestures, keyboards, and device APIs on iOS and Android.
 
-- [Instalación oficial de HeroUI Native](https://heroui.com/en/docs/native/getting-started/quick-start)
-- [Temas de HeroUI Native](https://heroui.com/en/docs/native/getting-started/theming)
-- [Exportación para web de Expo](https://docs.expo.dev/guides/publishing-websites/)
+- [HeroUI Native setup](https://heroui.com/en/docs/native/getting-started/quick-start)
+- [HeroUI Native theming](https://heroui.com/en/docs/native/getting-started/theming)
+- [Expo web export](https://docs.expo.dev/guides/publishing-websites/)

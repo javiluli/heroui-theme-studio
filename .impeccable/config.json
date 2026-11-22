@@ -17,6 +17,33 @@
         "value": "system",
         "createdAt": "2026-11-21T15:44:26.453Z",
         "reason": "Codex triage: System is the existing theme key for the Inter and system-ui stack declared in DESIGN.md."
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "public/native-runtime/_expo/static/css/global-506e71d7a63427debbfd8c9db6223298.css"
+        ],
+        "createdAt": "2026-11-22T00:56:27.648Z",
+        "reason": "Codex review: this minified Expo export places four independent utility selectors on one line. None of these selectors are used in the Native source or the rendered Home and 39 catalog examples."
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "public/native-runtime/_expo/static/css/global-3016c9e49da7588097890d662958648c.css"
+        ],
+        "createdAt": "2026-11-22T01:21:29.609Z",
+        "reason": "Codex review: minified Expo output puts independent selectors on one line. None of the matched utilities appears in the runtime source, Home, Profile, Catalog, or any of the 39 rendered component examples."
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "public/native-runtime/_expo/static/css/global-9a10b10a0b67d81ac7aa6e97babb829d.css"
+        ],
+        "createdAt": "2026-11-22T01:41:49.437Z",
+        "reason": "Codex review: the Expo export puts four independent utility selectors on the same minified line. The matched utilities are absent from the runtime source and from Home, Dayplan, and the component library in the browser."
       }
     ]
   }
