@@ -2,10 +2,22 @@ import { COLOR_TOKENS, type ThemeConfig, type ThemeMode, type ModeSettings } fro
 import { isEditableColor } from "./conversion";
 import { isThemeConfig } from "./storage";
 import { getModeSettings, isAllowedFontSans } from "./mode-layout";
+import type { ThemePlatform } from "./export-css";
 
 const TOKEN_SET = new Set<string>(COLOR_TOKENS);
 const MAX_CSS_LENGTH = 100_000;
 type ModeDeclarations = Partial<Record<string, string>>;
+
+export const MINIMAL_THEME_CSS: Record<ThemePlatform, string> = {
+  web: `:root {
+  --accent: #2563EB;
+}`,
+  native: `@layer theme {
+  @variant light {
+    --accent: oklch(0.55 0.22 264);
+  }
+}`,
+};
 
 function detectMode(selector: string): ThemeMode | null {
   const trimmed = selector.trim();
@@ -66,20 +78,22 @@ export function parseThemeCss(source: string, current: ThemeConfig): ThemeConfig
     light: { ...current.palettes.light },
     dark: { ...current.palettes.dark },
   };
-  const layouts: Partial<Record<ThemeMode, ModeSettings>> = {};
-  let importedTokens = 0;
+  const layouts: Record<ThemeMode, ModeSettings> = {
+    light: getModeSettings(current, "light"),
+    dark: getModeSettings(current, "dark"),
+  };
+  const importedModes = new Set<ThemeMode>();
   for (const mode of ["light", "dark"] as const) {
     const values = declarations[mode];
-    const count = COLOR_TOKENS.filter((token) => Object.hasOwn(values, token)).length;
-    if (!count) throw new Error(`No ${mode} theme colors found. Include both light and dark modes.`);
-    importedTokens += count;
+    if (!COLOR_TOKENS.some((token) => Object.hasOwn(values, token))) continue;
+    importedModes.add(mode);
     for (const token of COLOR_TOKENS) {
       const value = values[token];
       if (value === undefined) continue;
       if (!isEditableColor(value)) throw new Error(`Invalid CSS value for --${token} in ${mode}: ${String(value).slice(0, 70)}`);
       palettes[mode][token] = value;
     }
-    const previous = getModeSettings(current, mode);
+    const previous = layouts[mode];
     const radius = values.radius === undefined ? previous.radius : parseRadius(values.radius, "radius", 32);
     const fieldRadius = values["field-radius"] === undefined ? previous.fieldRadius : parseFieldRadius(values["field-radius"], radius);
     const fontSans = values["font-sans"] ?? previous.fontSans;
@@ -88,12 +102,12 @@ export function parseThemeCss(source: string, current: ThemeConfig): ThemeConfig
     }
     layouts[mode] = { radius, fieldRadius, fontSans };
   }
-  if (!importedTokens) throw new Error("No HeroUI variables to import.");
+  if (!importedModes.size) throw new Error("No HeroUI theme colors found. Include a supported color token in a light or dark theme block.");
   const result: ThemeConfig = {
     ...current,
     name: "Imported CSS theme",
-    radius: Math.round(layouts.light!.radius),
-    fieldRadius: Math.round(layouts.light!.fieldRadius),
+    radius: importedModes.has("light") ? Math.round(layouts.light.radius) : current.radius,
+    fieldRadius: importedModes.has("light") ? Math.round(layouts.light.fieldRadius) : current.fieldRadius,
     palettes,
     modeSettings: layouts,
   };

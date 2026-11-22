@@ -1,28 +1,31 @@
 import { useState } from "react";
 import { Button, Label, Modal, TextArea, TextField } from "@heroui/react";
 import { Check } from "lucide-react";
-import { parseThemeCss } from "../import-css";
+import { MINIMAL_THEME_CSS, parseThemeCss } from "../import-css";
+import type { ThemePlatform } from "../export-css";
 import type { ThemeConfig } from "../model";
 
 interface ImportCssPanelProps {
   theme: ThemeConfig;
+  platform: ThemePlatform;
   onApply: (theme: ThemeConfig) => void;
   onClose: () => void;
 }
 
 /** Import only validated HeroUI tokens; never mount pasted CSS as a style block. */
-export function ImportCssPanel({ theme, onApply, onClose }: ImportCssPanelProps) {
+export function ImportCssPanel({ theme, platform, onApply, onClose }: ImportCssPanelProps) {
   const [draft, setDraft] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const apply = (text: string) => {
     try {
       const imported = parseThemeCss(text, theme);
       onApply(imported);
-      onClose();
+      setDraft(text);
+      setFeedback({ type: "success", message: "Theme CSS applied." });
       return true;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Invalid CSS.");
+      setFeedback({ type: "error", message: cause instanceof Error ? cause.message : "Invalid CSS." });
       return false;
     }
   };
@@ -38,32 +41,34 @@ export function ImportCssPanel({ theme, onApply, onClose }: ImportCssPanelProps)
             <Modal.Body>
               <div className="flex min-w-0 flex-col gap-3">
                 <p className="text-sm text-muted">
-                  Paste HeroUI Web or Native CSS with both light and dark blocks.
+                  Paste HeroUI CSS for light mode, dark mode, or both.
                 </p>
-                <TextField value={draft} onChange={(value) => { setDraft(value); setError(null); }}>
+                <TextField value={draft} onChange={(value) => { setDraft(value); setFeedback(null); }}>
                   <Label>Theme CSS</Label>
                   <TextArea
                     variant="secondary"
                     rows={14}
+                    placeholder={MINIMAL_THEME_CSS[platform]}
                     spellCheck={false}
                     maxLength={100000}
                     onPaste={(event) => {
                       const pasted = event.clipboardData.getData("text");
                       if (!pasted) return;
-                      // A complete paste applies immediately. On failure, let the text
+                      // Valid pasted CSS applies immediately. On failure, let the text
                       // be pasted normally so the user can correct it and try again.
                       if (apply(pasted)) event.preventDefault();
                     }}
                   />
                 </TextField>
-                {error && <p className="text-sm text-danger" role="alert">{error}</p>}
+                {feedback?.type === "error" && <p className="text-sm text-danger" role="alert">{feedback.message}</p>}
+                {feedback?.type === "success" && <p className="text-sm text-success" role="status">{feedback.message}</p>}
                 <p className="text-xs text-muted">
                   The editor preserves supported OKLCH colors, corner radii, and --font-sans values.
                 </p>
               </div>
             </Modal.Body>
             <Modal.Footer>
-              <Button variant="secondary" onPress={onClose}>Cancel</Button>
+              <Button variant="secondary" onPress={onClose}>Close</Button>
               <Button variant="primary" onPress={() => apply(draft)} isDisabled={!draft.trim()}>
                 <Check size={16} /> Apply CSS
               </Button>

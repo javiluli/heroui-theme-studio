@@ -223,6 +223,7 @@ function StudioApp() {
       {importOpen && (
         <ImportCssPanel
           theme={editor.theme}
+          platform={platform}
           onApply={editor.importTheme}
           onClose={() => setImportOpen(false)}
         />

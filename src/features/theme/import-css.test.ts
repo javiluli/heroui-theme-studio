@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { COLOR_TOKENS } from "./model";
-import { parseThemeCss } from "./import-css";
+import { MINIMAL_THEME_CSS, parseThemeCss } from "./import-css";
 import { createPreset } from "./templates";
 import { exportThemeCss } from "./export-css";
 import { getModeSettings } from "./mode-layout";
@@ -25,6 +25,50 @@ const snippet = `@variant light {
 }`;
 
 describe("CSS theme import", () => {
+  it.each([
+    ["web", "#2563EB"],
+    ["native", "oklch(0.55 0.22 264)"],
+  ] as const)("imports the minimal %s light placeholder", (platform, accent) => {
+    const base = createPreset();
+    const imported = parseThemeCss(MINIMAL_THEME_CSS[platform], base);
+    expect(imported.palettes.light).toEqual({ ...base.palettes.light, accent });
+    expect(imported.palettes.dark).toEqual(base.palettes.dark);
+    expect(getModeSettings(imported, "dark")).toEqual(getModeSettings(base, "dark"));
+  });
+
+  it("imports a dark-only Web block with class and data-theme selectors", () => {
+    const base = createPreset();
+    const imported = parseThemeCss(`.dark,
+      [data-theme="dark"] {
+        color-scheme: dark;
+        /* Theme Colors (Dark Mode) */
+        --accent: oklch(62.04% 0.1950 253.83);
+        --accent-foreground: oklch(99.11% 0 0);
+        --background: oklch(12.00% 0.0015 253.83);
+      }`, base);
+    expect(imported.palettes.dark).toEqual({
+      ...base.palettes.dark,
+      accent: "oklch(62.04% 0.1950 253.83)",
+      "accent-foreground": "oklch(99.11% 0 0)",
+      background: "oklch(12.00% 0.0015 253.83)",
+    });
+    expect(imported.palettes.light).toEqual(base.palettes.light);
+    expect(getModeSettings(imported, "light")).toEqual(getModeSettings(base, "light"));
+  });
+
+  it.each(["light", "dark"] as const)("preserves the other mode when Native imports only %s with shared radii", (mode) => {
+    const other = mode === "light" ? "dark" : "light";
+    const base = createPreset();
+    const imported = parseThemeCss(`
+      @theme { --radius: 7px; --field-radius: calc(var(--radius) * 2); }
+      @layer theme { @variant ${mode} { --accent: #123456; } }
+    `, base);
+    expect(imported.palettes[mode]).toEqual({ ...base.palettes[mode], accent: "#123456" });
+    expect(imported.palettes[other]).toEqual(base.palettes[other]);
+    expect(getModeSettings(imported, mode)).toEqual({ ...getModeSettings(base, mode), radius: 7, fieldRadius: 14 });
+    expect(getModeSettings(imported, other)).toEqual(getModeSettings(base, other));
+  });
+
   it("imports all token values and independent geometry from @variant blocks", () => {
     const base = createPreset();
     const next = parseThemeCss(snippet, base);
@@ -87,8 +131,9 @@ describe("CSS theme import", () => {
     expect(roundtrip.modeSettings).toEqual(imported.modeSettings);
   });
 
-  it("never applies malformed, unsupported, or one-mode CSS", () => {
-    expect(() => parseThemeCss("@variant light { --accent: #123456; }", createPreset())).toThrow("dark theme colors");
+  it("rejects CSS without supported colors and invalid values in single- or dual-mode imports", () => {
+    expect(() => parseThemeCss(".dark { --radius: 7px; --unknown-token: red; }", createPreset())).toThrow("No HeroUI theme colors found");
+    expect(() => parseThemeCss("@variant dark { --accent: invalid; }", createPreset())).toThrow("Invalid CSS value");
     expect(() => parseThemeCss(snippet.replace("oklch(51.33% 0.2355 287.07)", "url(https://evil.example/img)"), createPreset())).toThrow("Invalid CSS value");
     expect(() => parseThemeCss(snippet.replace("0.35rem", "100rem"), createPreset())).toThrow("32px");
     expect(() => parseThemeCss(snippet.replace("var(--font-inter)", "url(https://evil.example)"), createPreset())).toThrow("supported font");
