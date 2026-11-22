@@ -1,7 +1,10 @@
-import { Link, ListBox, Select, Typography } from "@heroui/react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Header, Link, ListBox, Select, Typography } from "@heroui/react";
+import { memo, useCallback, useEffect, useRef, useState, type ComponentProps, type RefObject } from "react";
+import { categoryId, COMPONENT_CATEGORIES, COMPONENT_ORDER } from "../component-categories";
 import type { ReactComponentSlug } from "../inspection/component-variable-map";
 import { REACT_COMPONENT_SOURCES } from "../inspection/react-component-sources";
+
+type IndexLinkClickHandler = NonNullable<ComponentProps<typeof Link>["onClick"]>;
 
 function sectionId(slug: ReactComponentSlug) {
   return "example-" + slug;
@@ -13,20 +16,51 @@ function alignAnchor(target: HTMLElement | null) {
   }
 }
 
-const IndexLink = memo(function IndexLink({ slug, active, onJump }: {
+function jumpToAnchor(id: string, anchorTarget: RefObject<HTMLElement | null>) {
+  const target = document.getElementById(id);
+  if (!target) return;
+  if (window.location.hash !== "#" + id) window.history.pushState(null, "", "#" + id);
+  anchorTarget.current = target;
+  target.focus({ preventScroll: true });
+  alignAnchor(target);
+}
+
+export function ComponentJumpPicker({ anchorTarget }: { anchorTarget: RefObject<HTMLElement | null> }) {
+  return (
+    <div className="mb-6 max-w-72 @[84rem]/studio:hidden">
+      <Select aria-label="Jump to a component" placeholder="Jump to a component" selectedKey={null}
+        onSelectionChange={(key) => {
+          const slug = COMPONENT_ORDER.find((item) => item === key);
+          if (slug) jumpToAnchor(sectionId(slug), anchorTarget);
+        }}>
+        <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            {COMPONENT_CATEGORIES.map(({ title, slugs }) => (
+              <ListBox.Section key={title}>
+                <Header>{title}</Header>
+                {slugs.map((slug) => {
+                  const name = REACT_COMPONENT_SOURCES[slug].name;
+                  return <ListBox.Item key={slug} id={slug} textValue={name}>{name}</ListBox.Item>;
+                })}
+              </ListBox.Section>
+            ))}
+          </ListBox>
+        </Select.Popover>
+      </Select>
+    </div>
+  );
+}
+
+const IndexLink = memo(function IndexLink({ slug, active, onClick }: {
   slug: ReactComponentSlug;
   active: boolean;
-  onJump: (slug: ReactComponentSlug) => void;
+  onClick: IndexLinkClickHandler;
 }) {
   return (
     <li>
-      <Link href={"#" + sectionId(slug)} aria-current={active ? "location" : undefined}
-        onClick={(event) => {
-          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-          event.preventDefault();
-          onJump(slug);
-        }}>
-        <span className={`min-w-0 wrap-anywhere py-1.5 text-xs leading-snug ${active ? "font-semibold text-foreground" : "text-muted"}`}>
+      <Link href={"#" + sectionId(slug)} aria-current={active ? "location" : undefined} onClick={onClick}>
+        <span className={`min-w-0 wrap-anywhere py-1 text-xs leading-snug ${active ? "font-semibold text-accent" : "text-foreground"}`}>
           {REACT_COMPONENT_SOURCES[slug].name}
         </span>
       </Link>
@@ -34,19 +68,16 @@ const IndexLink = memo(function IndexLink({ slug, active, onJump }: {
   );
 });
 
-export const ComponentIndex = memo(function ComponentIndex({ gallery, slugs }: {
-  gallery: RefObject<HTMLDivElement | null>;
-  slugs: readonly ReactComponentSlug[];
+export const ComponentIndex = memo(function ComponentIndex({ gallery, anchorTarget }: {
+  gallery: HTMLDivElement | null;
+  anchorTarget: RefObject<HTMLElement | null>;
 }) {
-  const [active, setActive] = useState<ReactComponentSlug | undefined>(slugs[0]);
+  const [active, setActive] = useState(() => categoryId(COMPONENT_CATEGORIES[0].title));
   const indexScroll = useRef<HTMLDivElement>(null);
-  const anchorTarget = useRef<HTMLElement | null>(null);
-  const items = useMemo(() => slugs.map((slug) => ({ slug, name: REACT_COMPONENT_SOURCES[slug].name })), [slugs]);
 
   useEffect(() => {
-    const root = gallery.current;
-    if (!root) return;
-    const sections = Array.from(root.querySelectorAll<HTMLElement>("[data-example]"));
+    if (!gallery) return;
+    const sections = Array.from(gallery.querySelectorAll<HTMLElement>("[data-category-heading], [data-example]"));
     if (!sections.length) return;
     const readingLine = () => parseFloat(getComputedStyle(sections[0]).scrollMarginTop) + 2;
     let line = readingLine();
@@ -71,12 +102,12 @@ export const ComponentIndex = memo(function ComponentIndex({ gallery, slugs }: {
         else high = middle - 1;
       }
       const atBottom = window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
-      setActive(slugs[atBottom ? sections.length - 1 : low]);
+      setActive(sections[atBottom ? sections.length - 1 : low].id);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     const stopAligning = () => { anchorTarget.current = null; };
     const initial = document.getElementById(window.location.hash.slice(1));
-    if (initial && root.contains(initial)) {
+    if (initial && gallery.contains(initial)) {
       anchorTarget.current = initial;
       alignAnchor(initial);
     }
@@ -94,7 +125,7 @@ export const ComponentIndex = memo(function ComponentIndex({ gallery, slugs }: {
       resized = true;
       schedule();
     });
-    resize?.observe(root);
+    resize?.observe(gallery);
     return () => {
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", onResize);
@@ -103,8 +134,9 @@ export const ComponentIndex = memo(function ComponentIndex({ gallery, slugs }: {
       window.removeEventListener("keydown", stopAligning);
       resize?.disconnect();
       cancelAnimationFrame(frame);
+      anchorTarget.current = null;
     };
-  }, [gallery, slugs]);
+  }, [gallery, anchorTarget]);
 
   useEffect(() => {
     const scroll = indexScroll.current;
@@ -116,41 +148,34 @@ export const ComponentIndex = memo(function ComponentIndex({ gallery, slugs }: {
     else if (row.bottom > viewport.bottom) scroll.scrollTop += row.bottom - viewport.bottom;
   }, [active]);
 
-  const jump = useCallback((slug: ReactComponentSlug) => {
-    const id = sectionId(slug);
-    const target = document.getElementById(id);
-    if (!target) return;
-    if (window.location.hash !== "#" + id) window.history.pushState(null, "", "#" + id);
-    anchorTarget.current = target;
-    target.focus({ preventScroll: true });
-    alignAnchor(target);
-  }, []);
+  const followAnchor = useCallback<IndexLinkClickHandler>((event) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (!(event.currentTarget instanceof HTMLAnchorElement)) return;
+    event.preventDefault();
+    jumpToAnchor(event.currentTarget.hash.slice(1), anchorTarget);
+  }, [anchorTarget]);
 
   return (
-    <>
-      <div className="max-w-72 @[60rem]/catalog:hidden">
-        <Select aria-label="Jump to a component" placeholder="Jump to a component" selectedKey={null}
-          onSelectionChange={(key) => {
-            const slug = slugs.find((item) => item === key);
-            if (slug) jump(slug);
-          }}>
-          <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-          <Select.Popover>
-            <ListBox items={items}>
-              {({ slug, name }) => <ListBox.Item id={slug} textValue={name}>{name}</ListBox.Item>}
-            </ListBox>
-          </Select.Popover>
-        </Select>
+    <nav aria-label="Component index" className="sticky top-[calc(var(--studio-header-height,3.5625rem)+4.5rem)] mt-18 hidden min-w-0 px-2 @[84rem]/studio:block">
+      <Typography type="body-xs" color="muted" weight="medium">On this page</Typography>
+      <div ref={indexScroll} className="scrollbar mt-3 flex max-h-[calc(100dvh-var(--studio-header-height,3.5625rem)-7rem)] flex-col gap-6 overflow-y-auto overscroll-contain [@media(hover:hover)]:[&:not(:hover,:focus-within)]:[--scrollbar-color:transparent_transparent]"
+        data-scrollbar="thin">
+        {COMPONENT_CATEGORIES.map(({ title, slugs }) => {
+          const id = categoryId(title);
+          return (
+            <div key={id} className="space-y-1">
+              <div>
+                <Link href={"#" + id} aria-current={active === id ? "location" : undefined} onClick={followAnchor}>
+                  <Typography type="body-xs" color="muted" weight={active === id ? "semibold" : "medium"}>{title}</Typography>
+                </Link>
+              </div>
+              <ul aria-label={title}>
+                {slugs.map((slug) => <IndexLink key={slug} slug={slug} active={active === sectionId(slug)} onClick={followAnchor} />)}
+              </ul>
+            </div>
+          );
+        })}
       </div>
-      <nav aria-label="Component index" className="sticky top-[calc(var(--studio-header-height,3.5625rem)+4.5rem)] hidden min-w-0 @[60rem]/catalog:col-start-2 @[60rem]/catalog:row-start-1 @[60rem]/catalog:block">
-        <Typography type="body-xs" color="muted" weight="medium">On this page</Typography>
-        <div ref={indexScroll} className="scrollbar mt-2 max-h-[calc(100dvh-var(--studio-header-height,3.5625rem)-7rem)] overflow-y-auto overscroll-contain [@media(hover:hover)]:[&:not(:hover,:focus-within)]:[--scrollbar-color:transparent_transparent]"
-          data-scrollbar="thin">
-          <ul className="space-y-0.5">
-            {slugs.map((slug) => <IndexLink key={slug} slug={slug} active={active === slug} onJump={jump} />)}
-          </ul>
-        </div>
-      </nav>
-    </>
+    </nav>
   );
 });

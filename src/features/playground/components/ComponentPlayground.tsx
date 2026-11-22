@@ -72,6 +72,7 @@ export function ComponentPlayground({
 }) {
   const id = "example-" + slug;
   const title = REACT_COMPONENT_SOURCES[slug].name;
+  const Heading = collage ? "h2" : "h3";
   const lastStageHeight = useRef<number>(undefined);
   const measureStage = useCallback((stage: HTMLDivElement | null) => {
     if (!stage || typeof ResizeObserver === "undefined") return;
@@ -106,12 +107,12 @@ export function ComponentPlayground({
             : "min-w-0 scroll-mt-[calc(var(--studio-header-height,3.5625rem)+4.5rem)] space-y-3 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
         }
       >
-        <h2
+        <Heading
           id={id + "-title"}
           className={collage ? "sr-only" : "text-lg font-semibold"}
         >
           {title}
-        </h2>
+        </Heading>
         {collage && <div className="@container min-w-0">{children}</div>}
         {!collage && !children && (
           // Match the closed frame, including the HeroUI button's extra height below md.

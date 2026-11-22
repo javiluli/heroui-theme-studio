@@ -48,9 +48,11 @@ describe("Reusable layout wrappers", () => {
     expect(app).toMatch(/<main[\s\S]*<StudioViews page=\{page\} onNavigate=\{navigate\}>/);
     expect(app).toContain('page === "components" ? "max-w-334" : "max-w-6xl"');
     expect(app).toMatch(/<EditorPanel[\s\S]*<main\s+id="main-content"/);
-    expect(app).toMatch(/<ComponentGallery\s+layout=\{page === "collage" \? "collage" : "list"\}\s*\/>/);
+    expect(app).toMatch(/<ComponentGallery\s+layout=\{page === "collage" \? "collage" : "list"\}/);
     expect(app).toContain("<RealWebsite />");
-    expect(gallery).toContain("<ComponentIndex gallery={gallery}");
+    expect(app).toContain("grid-cols-[var(--catalog-rail)_minmax(0,56rem)_var(--catalog-rail)]");
+    expect(app).toMatch(/<\/main>\s*\{page === "components" && catalog && \(\s*<Suspense fallback=\{null\}>\s*<ComponentIndex gallery=\{catalog\}/);
+    expect(gallery).toContain("<ComponentJumpPicker anchorTarget={anchorTarget}");
     expect(gallery).not.toMatch(/2xl:grid-cols-2/);
     expect(website).toContain("@container w-full min-w-0");
   });

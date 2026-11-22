@@ -24,6 +24,10 @@ import { ViewLoadBoundary } from "./layout/ViewLoadBoundary";
 const ComponentGallery = lazy(
   () => import("../features/playground/ComponentGallery"),
 );
+const ComponentIndex = lazy(
+  () => import("../features/playground/components/ComponentIndex")
+    .then(({ ComponentIndex }) => ({ default: ComponentIndex })),
+);
 const RealWebsite = lazy(
   () => import("../features/website/RealWebsite"),
 );
@@ -42,6 +46,8 @@ function currentPage(): StudioPage {
 function StudioApp() {
   const editor = useThemeStudio();
   const [page, setPage] = useState<StudioPage>(currentPage);
+  const [catalog, setCatalog] = useState<HTMLDivElement | null>(null);
+  const catalogAnchor = useRef<HTMLElement | null>(null);
   const platform = page === "native" ? "native" : "web";
   const lastWebPage = useRef<Exclude<StudioPage, "native">>(
     page === "native" ? "components" : page,
@@ -134,9 +140,11 @@ function StudioApp() {
         <Container>
           <Grid className={
             "grid-cols-1 gap-5 py-4 @[56rem]/studio:grid-cols-[24rem_minmax(0,1fr)] " +
-            (page === "native"
-              ? "h-[calc(100dvh-var(--studio-header-height,3.5625rem))] grid-rows-[minmax(0,1fr)_minmax(0,3fr)] @[56rem]/studio:grid-rows-[minmax(0,1fr)]"
-              : "items-start")
+            (page === "components"
+              ? "items-start @[84rem]/studio:[--catalog-rail:clamp(18rem,22%,24rem)] @[84rem]/studio:grid-cols-[var(--catalog-rail)_minmax(0,56rem)_var(--catalog-rail)] @[84rem]/studio:justify-between"
+              : page === "native"
+                ? "h-[calc(100dvh-var(--studio-header-height,3.5625rem))] grid-rows-[minmax(0,1fr)_minmax(0,3fr)] @[56rem]/studio:grid-rows-[minmax(0,1fr)]"
+                : "items-start")
           }>
             <EditorPanel
               platform={platform}
@@ -185,6 +193,8 @@ function StudioApp() {
                     {(page === "components" || page === "collage") && (
                       <ComponentGallery
                         layout={page === "collage" ? "collage" : "list"}
+                        onGalleryReady={setCatalog}
+                        anchorTarget={catalogAnchor}
                       />
                     )}
                     {page === "website" && <RealWebsite />}
@@ -198,6 +208,11 @@ function StudioApp() {
                 </ViewLoadBoundary>
               </StudioViews>
             </main>
+            {page === "components" && catalog && (
+              <Suspense fallback={null}>
+                <ComponentIndex gallery={catalog} anchorTarget={catalogAnchor} />
+              </Suspense>
+            )}
           </Grid>
         </Container>
       </div>

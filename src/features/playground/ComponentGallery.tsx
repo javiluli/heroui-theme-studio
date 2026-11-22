@@ -1,9 +1,9 @@
-import { lazy, memo, Suspense, useEffect, useRef, useState, type ComponentType } from "react";
-import { Skeleton, Typography } from "@heroui/react";
+import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState, type ComponentType, type RefObject } from "react";
+import { Skeleton } from "@heroui/react";
 import { ComponentPlayground } from "./components/ComponentPlayground";
-import { ComponentIndex } from "./components/ComponentIndex";
+import { ComponentJumpPicker } from "./components/ComponentIndex";
 import { CollagePreview } from "./components/CollagePreview";
-import { REACT_COMPONENT_SOURCES } from "./inspection/react-component-sources";
+import { categoryId, COMPONENT_CATEGORIES, COMPONENT_ORDER } from "./component-categories";
 import type { ReactComponentSlug } from "./inspection/component-variable-map";
 import {
   AutocompletePlayground, CheckboxGroupPlayground, ColorSwatchesPlayground, ComboBoxPlayground, FieldsetPlayground,
@@ -129,10 +129,6 @@ export const COMPONENT_EXAMPLES = {
   typography: TypographyExample,
 } satisfies Record<ReactComponentSlug, ComponentType>;
 
-const COMPONENT_ORDER = (Object.keys(COMPONENT_EXAMPLES) as ReactComponentSlug[]).sort(
-  (a, b) => REACT_COMPONENT_SOURCES[a].name.localeCompare(REACT_COMPONENT_SOURCES[b].name, "en"),
-);
-
 const ExampleCard = memo(function ExampleCard({ slug, nearby }: {
   slug: ReactComponentSlug;
   nearby: boolean;
@@ -148,9 +144,17 @@ const ExampleCard = memo(function ExampleCard({ slug, nearby }: {
 });
 
 /** Keep headings in document order and mount untouched samples around the viewport. */
-export default memo(function ComponentGallery({ layout = "list" }: { layout?: "list" | "collage" }) {
+export default memo(function ComponentGallery({ layout = "list", onGalleryReady, anchorTarget }: {
+  layout?: "list" | "collage";
+  onGalleryReady: (gallery: HTMLDivElement | null) => void;
+  anchorTarget: RefObject<HTMLElement | null>;
+}) {
   const collage = layout === "collage";
   const gallery = useRef<HTMLDivElement>(null);
+  const registerGallery = useCallback((node: HTMLDivElement | null) => {
+    gallery.current = node;
+    onGalleryReady(node);
+  }, [onGalleryReady]);
   const [nearby, setNearby] = useState(() => new Set(COMPONENT_ORDER.slice(0, 4)));
   useEffect(() => {
     if (collage || !gallery.current) return;
@@ -176,18 +180,20 @@ export default memo(function ComponentGallery({ layout = "list" }: { layout?: "l
   if (collage) return <CollagePreview />;
 
   return (
-    <section className="@container/catalog flex w-full min-w-0 flex-col gap-6"
+    <section className="w-full min-w-0"
       aria-label="Free HeroUI React v3 component catalog">
-      <header className="space-y-1">
-        <Typography.Heading level={1}>Component examples</Typography.Heading>
-        <Typography.Paragraph size="sm">{COMPONENT_ORDER.length} free HeroUI React v3 components.</Typography.Paragraph>
-      </header>
-      <div className="grid min-w-0 items-start gap-6 @[60rem]/catalog:grid-cols-[minmax(0,1fr)_10rem]">
-        <ComponentIndex gallery={gallery} slugs={COMPONENT_ORDER} />
-        <div ref={gallery} data-gallery-layout={layout}
-          className="grid min-w-0 grid-cols-1 items-start gap-6 @[60rem]/catalog:col-start-1 @[60rem]/catalog:row-start-1">
-          {COMPONENT_ORDER.map((slug) => <ExampleCard key={slug} slug={slug} nearby={nearby.has(slug)} />)}
-        </div>
+      <h1 className="sr-only">Components</h1>
+      <ComponentJumpPicker anchorTarget={anchorTarget} />
+      <div ref={registerGallery} data-gallery-layout={layout} className="grid min-w-0 gap-10">
+        {COMPONENT_CATEGORIES.map(({ title, slugs }) => (
+          <section key={title} className="grid min-w-0 gap-6">
+            <h2 id={categoryId(title)} data-category-heading tabIndex={-1}
+              className="scroll-mt-[calc(var(--studio-header-height,3.5625rem)+4.5rem)] text-xl font-semibold focus-visible:outline-2 focus-visible:outline-focus">
+              {title}
+            </h2>
+            {slugs.map((slug) => <ExampleCard key={slug} slug={slug} nearby={nearby.has(slug)} />)}
+          </section>
+        ))}
       </div>
     </section>
   );
