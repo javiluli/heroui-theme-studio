@@ -96,7 +96,7 @@ export const ColorControl = memo(function ColorControl({
       highlighted={highlighted}
       className="@container/color-tile min-w-0 rounded-(--field-radius) bg-default text-default-foreground"
     >
-      <div className="grid min-h-full min-w-0 grid-cols-1 items-center @min-[9rem]/color-tile:grid-cols-[minmax(0,1fr)_auto]">
+      <div className="grid min-h-full min-w-0 grid-cols-1 items-center @min-[10.5rem]/color-tile:grid-cols-[minmax(0,1fr)_auto]">
         <ColorPicker
           value={pickerColor}
           onChange={changeColor}
