@@ -9,7 +9,7 @@ import {
   parseColor,
   type Color,
 } from "@heroui/react";
-import { Info } from "lucide-react";
+import { Info, RotateCcw } from "lucide-react";
 import type { ColorToken } from "../model";
 import { cssColorValue } from "../conversion";
 import { TOKEN_DESCRIPTIONS } from "../token-descriptions";
@@ -18,6 +18,7 @@ import { EditorTokenTarget } from "./EditorTokenTarget";
 interface ColorControlProps {
   token: ColorToken;
   value: string;
+  resetValue: string;
   hex: string;
   highlighted?: boolean;
   onChange: (token: ColorToken, color: string) => void;
@@ -29,6 +30,7 @@ interface ColorControlProps {
 export const ColorControl = memo(function ColorControl({
   token,
   value,
+  resetValue,
   hex,
   highlighted,
   onChange,
@@ -75,8 +77,9 @@ export const ColorControl = memo(function ColorControl({
     <EditorTokenTarget
       variable={`--${token}`}
       highlighted={highlighted}
-      className="relative grid min-w-0 rounded-(--field-radius) bg-default text-default-foreground"
+      className="@container/color-tile min-w-0 rounded-(--field-radius) bg-default text-default-foreground"
     >
+      <div className="grid min-h-full min-w-0 grid-cols-1 items-center @min-[9rem]/color-tile:grid-cols-[minmax(0,1fr)_auto]">
         <ColorPicker
           value={pickerColor}
           onChange={changeColor}
@@ -89,7 +92,7 @@ export const ColorControl = memo(function ColorControl({
               if (token === "overlay") setOverlayBackground(cssColorValue(value));
             }}
           >
-            <span className="flex min-h-9 w-full min-w-0 items-center gap-1 ps-1 pe-8 py-1.5 text-left">
+            <span className="flex min-h-9 w-full min-w-0 items-center gap-1 px-1 py-1.5 text-left">
               <span className="shrink-0" aria-hidden="true">
                 <ColorSwatch
                   color={swatchColor}
@@ -142,7 +145,17 @@ export const ColorControl = memo(function ColorControl({
             </div>
           </ColorPicker.Popover>
         </ColorPicker>
-        <div className="absolute end-0 top-1/2 -translate-y-1/2">
+        <div className="flex justify-end">
+          <Button
+            isIconOnly
+            size="sm"
+            variant="ghost"
+            aria-label={`Reset --${token}`}
+            isDisabled={value === resetValue}
+            onPress={() => onChange(token, resetValue)}
+          >
+            <RotateCcw size={14} aria-hidden="true" />
+          </Button>
           <Tooltip delay={200}>
             <Button isIconOnly size="sm" variant="ghost" aria-label={`About --${token}`}>
               <Info size={14} aria-hidden="true" />
@@ -155,6 +168,7 @@ export const ColorControl = memo(function ColorControl({
             </Tooltip.Content>
           </Tooltip>
         </div>
+      </div>
     </EditorTokenTarget>
   );
 });

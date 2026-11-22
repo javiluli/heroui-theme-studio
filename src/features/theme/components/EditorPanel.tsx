@@ -3,6 +3,7 @@ import { Button, ColorSwatch, Label, ListBox, Select, Switch, ToggleButton, Togg
 import { Check, Copy, RotateCcw, ClipboardPaste, Globe2, Info, Smartphone } from "lucide-react";
 import {
   COLOR_TOKENS,
+  DEFAULT_THEME,
   TOKEN_GROUPS,
   type ColorToken,
   type ThemeConfig,
@@ -11,7 +12,7 @@ import {
 import { createPreset, PRESET_LABELS, templates, type PresetId } from "../templates";
 import { exportThemeCss, type ThemePlatform } from "../export-css";
 import { ColorControl } from "./ColorControl";
-import { colorToHex } from "../conversion";
+import { colorToHex, makeThemeIndependent } from "../conversion";
 import { ThemeSettingsPanel } from "./ThemeSettingsPanel";
 import { getModeSettings } from "../mode-layout";
 import { NATIVE_COLOR_LINKS } from "../native-color-links";
@@ -51,6 +52,7 @@ const presets = templates.map(({ name, label }) => {
     accent: { light: colorToHex(light.accent, light), dark: colorToHex(dark.accent, dark) },
   };
 });
+const resetPalettes = makeThemeIndependent(DEFAULT_THEME).palettes;
 
 /** Layout utilities never target HeroUI BEM classes or override its component CSS. */
 export function EditorPanel({
@@ -282,6 +284,7 @@ export function EditorPanel({
                     key={token}
                     token={token}
                     value={palette[token]}
+                    resetValue={resetPalettes[mode][token]}
                     hex={colorToHex(palette[token], palette)}
                     highlighted={highlightedVariable === `--${token}`}
                     onChange={onColor}
