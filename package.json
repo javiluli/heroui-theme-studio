@@ -19,10 +19,11 @@
     "@heroui/react": "^3.0.0",
     "@heroui/styles": "^3.0.0",
     "@mlc-ai/web-llm": "^0.2.88",
+    "@vercel/analytics": "^2.0.1",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-aria-components": "^1.22.1"
+    "react-aria-components": "^1.22.1",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.0",

@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { Container, Flex, Grid } from "../components/layout";
 import { EditorPanel } from "../features/theme/components/EditorPanel";
 import { ExportPanel } from "../features/theme/components/ExportPanel";
@@ -243,6 +244,7 @@ function StudioApp() {
           onClose={() => setImportOpen(false)}
         />
       )}
+      <Analytics />
     </Flex>
   );
 }
