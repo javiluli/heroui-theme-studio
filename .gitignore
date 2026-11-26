@@ -13,5 +13,6 @@ public/native-runtime/
 .impeccable/config.local.json
 .impeccable/hook.cache.json
 .impeccable/live/
+/graphify-out/cache/
 # heroui-agents-md
 .heroui-docs/
