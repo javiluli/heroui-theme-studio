@@ -14,7 +14,7 @@ describe("Component variables UI", () => {
     expect(html).toContain('aria-hidden="true"');
     expect(html).toContain("skeleton--none");
     expect(html).toContain("pb-12 md:pb-11");
-    expect(html).toMatch(/grid min-h-\d+ place-items-center/);
+    expect(html).toMatch(/grid min-h-\S+ place-items-center/);
     expect(html).not.toContain("contain-intrinsic-size");
     expect(html).not.toContain('data-playground-panel');
   });
@@ -39,8 +39,6 @@ describe("Component variables UI", () => {
     expect(tiles).toContain("<EditorTokenTarget");
     expect(target).toContain('id={"theme-token-" + variable.slice(2)}');
     expect(target).toContain("data-highlighted");
-    expect(settings).toContain('<RadiusField token="radius"');
-    expect(settings).toContain('<RadiusField token="field-radius"');
     expect(settings).toContain("<NumberField.Input");
     expect(panel).not.toContain("dangerouslySetInnerHTML");
   });
@@ -56,7 +54,7 @@ describe("Component variables UI", () => {
     expect(html.match(/aria-expanded="false"/g)).toHaveLength(2);
     expect(html).toContain('data-playground-stage');
     const placeholder = renderToStaticMarkup(createElement(ComponentPlayground, { slug: "button" }));
-    const minimum = placeholder.match(/grid (min-h-\d+) place-items-center/)?.[1];
+    const minimum = placeholder.match(/grid (min-h-\S+) place-items-center/)?.[1];
     expect(minimum).toBeDefined();
     expect(html).toContain(`grid ${minimum} min-w-0`);
     expect(html).not.toContain("h-112");

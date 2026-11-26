@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { Button, Disclosure, Skeleton } from "@heroui/react";
-import { Braces, SlidersHorizontal } from "lucide-react";
+import { Braces, Settings2 } from "lucide-react";
 import { ComponentVariables } from "../inspection/ComponentVariables";
 import {
   getComponentVariableGuide,
@@ -20,7 +20,7 @@ interface PlaygroundScope {
   collage: boolean;
 }
 const PlaygroundContext = createContext<PlaygroundScope | null>(null);
-const stageMinimum = "min-h-52";
+const stageMinimum = "min-h-[var(--studio-stage-height,13rem)]";
 
 export function usePlaygroundScope() {
   const scope = useContext(PlaygroundContext);
@@ -45,7 +45,7 @@ function TokenDisclosure({
         <Button
           slot="trigger"
           size="sm"
-          variant={expanded ? "secondary" : "ghost"}
+          variant={expanded ? "tertiary" : "ghost"}
         >
           <Braces size={16} aria-hidden="true" /> Tokens{" "}
           <Disclosure.Indicator aria-hidden="true" />
@@ -104,7 +104,7 @@ export function ComponentPlayground({
         className={
           collage
             ? "min-w-0"
-            : "min-w-0 scroll-mt-[calc(var(--studio-header-height,3.5625rem)+4.5rem)] space-y-3 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+            : "min-w-0 scroll-mt-[calc(var(--studio-header-height)_+_var(--studio-inset))] space-y-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
         }
       >
         <Heading
@@ -169,14 +169,14 @@ export function PlaygroundControls({ children }: { children: ReactNode }) {
       <div className="absolute inset-e-2 top-2 z-10" data-playground-settings>
         <Button
           size="sm"
-          variant={open ? "secondary" : "ghost"}
+          variant={open ? "tertiary" : "ghost"}
           isIconOnly
           aria-label="Example settings"
           aria-expanded={open}
           aria-controls={panelId}
           onPress={() => setState(open ? "closed" : "open")}
         >
-          <SlidersHorizontal size={16} aria-hidden="true" />
+          <Settings2 aria-hidden="true" />
         </Button>
       </div>
       <div
@@ -192,7 +192,7 @@ export function PlaygroundControls({ children }: { children: ReactNode }) {
       >
         <div
           className={
-            "flex min-w-0 flex-wrap items-end gap-3 px-2 pt-2 @[36rem]/frame:w-52 @[36rem]/frame:flex-col @[36rem]/frame:items-stretch @[36rem]/frame:ps-4 @[36rem]/frame:pe-0 " +
+            "flex min-w-0 flex-wrap items-end gap-4 px-2 pt-2 @[36rem]/frame:w-52 @[36rem]/frame:flex-col @[36rem]/frame:items-stretch @[36rem]/frame:ps-4 @[36rem]/frame:pe-0 " +
             "motion-safe:transition-[opacity,translate,visibility] motion-safe:duration-300 motion-safe:ease-out-quint " +
             (open
               ? "visible translate-x-0 opacity-100 motion-safe:starting:translate-x-2 motion-safe:starting:opacity-0"

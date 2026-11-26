@@ -38,8 +38,7 @@ export function usePreviewTheme() {
 
     const origin = window.location.origin;
     const ready = () => window.parent.postMessage(PREVIEW_READY, origin);
-    const applied: Partial<Record<PreviewThemeMessage["mode"], Record<string, string>>> = {};
-    let activeMode: PreviewThemeMessage["mode"] | undefined;
+    let applied: string[] = [];
     const receiveTheme = (event: MessageEvent) => {
       if (event.origin !== origin || event.source !== window.parent) return;
       if (event.data === PREVIEW_PING) {
@@ -51,19 +50,18 @@ export function usePreviewTheme() {
           !data.variables || typeof data.variables !== "object") return;
 
       const { mode, variables } = data;
-      const previous = applied[mode] ?? {};
-      const changed = Object.fromEntries(Object.entries(variables)
-        .filter(([name, value]) => /^--[a-z-]+$/.test(name) && typeof value === "string" && previous[name] !== value));
-      const hasChanges = Object.keys(changed).length > 0;
-      const modeChanged = activeMode !== mode;
-      if (hasChanges) Uniwind.updateCSSVariables(mode, changed);
-      applied[mode] = variables;
-      if (modeChanged) {
-        Uniwind.setTheme(mode);
-        activeMode = mode;
+      for (const name of applied) root.style.removeProperty(name);
+      applied = [];
+      for (const [name, value] of Object.entries(variables)) {
+        if (!/^--[a-z-]+$/.test(name) || typeof value !== "string") continue;
+        root.style.setProperty(name, value);
+        applied.push(name);
       }
-      if (pixel && (modeChanged || hasChanges)) updateAnimationColors(root, pixel);
+      Uniwind.setTheme(mode);
       root.style.colorScheme = mode;
+      if (pixel) updateAnimationColors(root, pixel);
+      // Notify Native hooks that read computed CSS variables on Expo Web.
+      Uniwind.updateCSSVariables(mode, {});
       setThemeReady(true);
     };
     window.addEventListener("message", receiveTheme);

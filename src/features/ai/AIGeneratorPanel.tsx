@@ -143,16 +143,16 @@ export default memo(function AIGeneratorPanel({open, theme, onApply, onClose}: P
         if (event.key === 'Escape' && !event.defaultPrevented && !event.nativeEvent.isComposing) onClose();
       }}
       className={'sticky top-0 flex h-dvh min-h-0 shrink-0 flex-col overflow-hidden bg-surface text-surface-foreground motion-safe:transition-[width] motion-safe:duration-200 ' +
-        (open ? 'w-full border-l border-separator lg:w-[398px]' : 'pointer-events-none w-0 border-0')}>
-        <div className="flex items-center justify-between gap-3 border-b border-separator px-4 py-3">
+        (open ? 'w-full border-l border-separator lg:w-(--studio-assistant-width)' : 'pointer-events-none w-0 border-0')}>
+        <div className="flex min-h-14 items-center justify-between gap-3 border-b border-separator px-4 py-2">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="grid size-9 shrink-0 place-items-center rounded-(--radius) bg-surface-secondary text-surface-secondary-foreground"><Sparkles size={18} aria-hidden="true"/></span>
             <div className="flex flex-col">
-              <strong className="text-sm">Theme assistant</strong>
+              <strong className="text-base font-semibold">Theme assistant</strong>
               <small className="text-xs text-muted">Local AI</small>
             </div>
           </div>
-          <Button size="sm" isIconOnly variant="ghost" aria-label="Close chat" onPress={onClose}><X size={18}/></Button>
+          <Button size="lg" isIconOnly variant="ghost" aria-label="Close chat" onPress={onClose}><X size={18} aria-hidden="true"/></Button>
         </div>
 
         <div className="scrollbar flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4" data-scrollbar="thin"
@@ -169,7 +169,7 @@ export default memo(function AIGeneratorPanel({open, theme, onApply, onClose}: P
               </p>
               <div className="flex flex-wrap gap-2">
                 {EXAMPLES.map(({label, prompt}) => (
-                  <Button key={label} variant="secondary" size="sm" onPress={() => editDraft(prompt)}>{label}</Button>
+                  <Button key={label} variant="tertiary" size="sm" onPress={() => editDraft(prompt)}>{label}</Button>
                 ))}
               </div>
               {!unavailable && <p className="flex items-start gap-2 text-xs leading-relaxed text-muted">
@@ -250,8 +250,8 @@ export default memo(function AIGeneratorPanel({open, theme, onApply, onClose}: P
                 }}/>
             </TextField>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] text-muted">Enter to send · Shift+Enter for a new line</span>
-              <Button isIconOnly size="sm" variant="primary" aria-label="Send and generate theme"
+              <span className="text-xs leading-snug text-muted">Enter to send · Shift+Enter for a new line</span>
+              <Button isIconOnly size="md" variant="primary" aria-label="Send and generate theme"
                 isDisabled={!canSend}
                 onPress={submit}><ArrowUp size={18}/></Button>
             </div>

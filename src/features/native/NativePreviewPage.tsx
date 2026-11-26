@@ -8,8 +8,7 @@ import {
   PREVIEW_THEME,
   type PreviewThemeMessage,
 } from "./runtime/src/theme-protocol";
-import type { ThemeConfig, ThemeMode } from "../theme/model";
-import { getThemeVariables } from "../theme/conversion";
+import { getThemeVariables, type ThemeConfig, type ThemeMode } from "../theme/model";
 import { DEVICE_PRESETS } from "./device-presets";
 
 const defaultDevice = DEVICE_PRESETS[0];
@@ -52,44 +51,25 @@ export default function NativePreviewPage({
 
   useEffect(() => {
     const origin = window.location.origin;
-    const root = document.documentElement;
-    const defaults = Object.entries(getThemeVariables(theme, mode));
-    let sent: Record<string, string> | undefined;
-    const syncTheme = (force = false) => {
-      if (root.dataset.theme !== mode) return;
-      // ColorPicker paints on the document during drags without updating React state.
-      const variables = Object.fromEntries(defaults.map(([name, value]) =>
-        [name, root.style.getPropertyValue(name) || value]));
-      if (!force && sent && Object.entries(variables).every(([name, value]) => sent?.[name] === value)) return;
-      sent = variables;
-      const message: PreviewThemeMessage = {
-        type: PREVIEW_THEME,
-        mode,
-        variables,
-      };
-      frame.current?.contentWindow?.postMessage(message, origin);
+    const message: PreviewThemeMessage = {
+      type: PREVIEW_THEME,
+      mode,
+      variables: getThemeVariables(theme.overrides[mode], true),
     };
+    const syncTheme = () => frame.current?.contentWindow?.postMessage(message, origin);
     const receiveReady = (event: MessageEvent) => {
       if (
         event.origin !== origin ||
         event.source !== frame.current?.contentWindow
       )
         return;
-      if (event.data === PREVIEW_READY) syncTheme(true);
+      if (event.data === PREVIEW_READY) syncTheme();
       if (event.data === PREVIEW_RENDERED) setStatus("ready");
     };
     window.addEventListener("message", receiveReady);
-    const observer = new MutationObserver(() => syncTheme());
-    if (status === "ready") {
-      syncTheme();
-      observer.observe(root, { attributeFilter: ["style"] });
-    } else {
-      frame.current?.contentWindow?.postMessage(PREVIEW_PING, origin);
-    }
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("message", receiveReady);
-    };
+    if (status === "ready") syncTheme();
+    else frame.current?.contentWindow?.postMessage(PREVIEW_PING, origin);
+    return () => window.removeEventListener("message", receiveReady);
   }, [attempt, status, theme, mode]);
 
   useEffect(() => {
@@ -106,9 +86,9 @@ export default function NativePreviewPage({
   return (
     <section
       aria-labelledby="native-preview-title"
-      className="flex h-full min-h-0 min-w-0 flex-col gap-4"
+      className="flex h-full min-h-0 min-w-0 flex-col gap-(--studio-inset)"
     >
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <header className="flex min-h-11 flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <h1
             id="native-preview-title"
@@ -121,7 +101,7 @@ export default function NativePreviewPage({
           </p>
         </div>
         <Button
-          size="sm"
+          size="lg"
           isIconOnly
           variant="ghost"
           aria-label="Reload preview"

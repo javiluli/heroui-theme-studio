@@ -56,7 +56,7 @@ describe('free HeroUI React v3 gallery coverage', () => {
     expect(navigation).toContain('{ id: "collage", label: "Collage" }');
     expect(app).toMatch(/<ComponentGallery\s+layout=\{page === "collage" \? "collage" : "list"\}/);
     expect(app).toContain('<RealWebsite />');
-    expect(app).toMatch(/<NativePreviewPage\s+theme=\{editor.previewTheme\}\s+mode=\{editor.mode\}\s*\/>/);
+    expect(app).toMatch(/<NativePreviewPage\s+theme=\{editor.theme\}\s+mode=\{editor.mode\}\s*\/>/);
     expect(Object.keys(packageFile.dependencies).some((key) => key.includes('heroui-pro'))).toBe(false);
   });
 

@@ -184,11 +184,11 @@ export default memo(function ComponentGallery({ layout = "list", onGalleryReady,
       aria-label="Free HeroUI React v3 component catalog">
       <h1 className="sr-only">Components</h1>
       <ComponentJumpPicker anchorTarget={anchorTarget} />
-      <div ref={registerGallery} data-gallery-layout={layout} className="grid min-w-0 gap-10">
+      <div ref={registerGallery} data-gallery-layout={layout} className="grid min-w-0 gap-[calc(var(--studio-example-gap)_+_1rem)]">
         {COMPONENT_CATEGORIES.map(({ title, slugs }) => (
-          <section key={title} className="grid min-w-0 gap-6">
+          <section key={title} className="grid min-w-0 gap-(--studio-example-gap)">
             <h2 id={categoryId(title)} data-category-heading tabIndex={-1}
-              className="scroll-mt-[calc(var(--studio-header-height,3.5625rem)+4.5rem)] text-xl font-semibold focus-visible:outline-2 focus-visible:outline-focus">
+              className="scroll-mt-[calc(var(--studio-header-height)_+_var(--studio-inset))] text-xl font-semibold focus-visible:outline-2 focus-visible:outline-focus">
               {title}
             </h2>
             {slugs.map((slug) => <ExampleCard key={slug} slug={slug} nearby={nearby.has(slug)} />)}

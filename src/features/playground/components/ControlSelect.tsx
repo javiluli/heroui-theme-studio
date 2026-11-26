@@ -17,14 +17,15 @@ export function ControlSelect<T extends string>({
 }) {
   const scope = usePlaygroundScope();
   return (
-    <div className="min-w-28 max-w-full">
     <Select
-      selectedKey={value}
-      onSelectionChange={(key) => {
-        if (key !== null) onChange(String(key) as T);
+      className="min-w-28 max-w-full"
+      value={value}
+      onChange={(key) => {
+        const option = options.find((option) => option.key === key);
+        if (option) onChange(option.key);
       }}
     >
-      <Label>{label}</Label>
+      <Label><span className="font-mono text-xs leading-4 font-normal text-muted">{label}</span></Label>
       <Select.Trigger aria-label={scope.id + ": " + label}>
         <Select.Value />
         <Select.Indicator />
@@ -40,6 +41,5 @@ export function ControlSelect<T extends string>({
         </ListBox>
       </Select.Popover>
     </Select>
-    </div>
   );
 }

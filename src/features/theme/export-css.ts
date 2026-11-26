@@ -1,58 +1,36 @@
-import type { ThemeConfig, ThemeMode } from './model';
-import { getThemeVariables } from './conversion';
+import { getThemeVariables, MODES, type ThemeConfig } from "./model";
 
-export type ThemePlatform = 'web' | 'native';
+export type ThemePlatform = "web" | "native";
 
-function declarations(theme: ThemeConfig, mode: ThemeMode, platform: ThemePlatform): string[] {
-  return [
-    ...(mode === 'dark' ? ['color-scheme: dark;'] : []),
-    ...Object.entries(getThemeVariables(theme, mode))
-      .filter(([name]) => platform === 'web' || (name !== '--scrollbar' && name !== '--font-sans'))
-      .map(([name, value]) => name + ': ' + value + ';'),
-  ];
-}
+const webSelectors = {
+  light: ':root:not(.dark):not([data-theme="dark"]),\n.light,\n.default,\n[data-theme="light"],\n[data-theme="default"]',
+  dark: '.dark,\n[data-theme="dark"]',
+};
 
-function webModeCss(theme: ThemeConfig, mode: ThemeMode): string {
-  const selectors = mode === 'light'
-    ? ':root,\n.light,\n.default,\n[data-theme="light"],\n[data-theme="default"]'
-    : '.dark,\n[data-theme="dark"]';
-  return [
-    selectors + ' {',
-    ...declarations(theme, mode, 'web').map((line) => '  ' + line),
-    '}',
-  ].join('\n');
-}
+export function exportThemeCss(theme: ThemeConfig, platform: ThemePlatform = "web"): string {
+  const native = platform === "native";
+  const blocks = MODES.flatMap((mode) => {
+    const variables = getThemeVariables(theme.overrides[mode], native);
+    if (native) delete variables["--font-sans"];
+    const entries = Object.entries(variables);
+    if (!entries.length) return [];
+    const indent = native ? "    " : "";
+    const selector = native ? "@variant " + mode : webSelectors[mode];
+    return [[
+      indent + selector + " {",
+      ...entries.map(([name, value]) => indent + "  " + name + ": " + value + ";"),
+      indent + "}",
+    ].join("\n")];
+  }).join("\n\n");
 
-export function exportThemeCss(theme: ThemeConfig, platform: ThemePlatform = 'web'): string {
-  if (platform === 'native') {
-    const variant = (mode: ThemeMode) => [
-      '    @variant ' + mode + ' {',
-      ...declarations(theme, mode, 'native').map((line) => '      ' + line),
-      '    }',
-    ].join('\n');
-    return [
-      '/* HeroUI Native · add to global.css after heroui-native/styles. */',
-      '/* Fuentes: carga las caras en Expo y configura --font-normal, --font-medium, --font-semibold y --font-bold en @theme. */',
-      '/* https://heroui.com/en/docs/native/getting-started/theming#custom-fonts */',
-      '',
-      '@layer theme {',
-      '  :root {',
-      variant('light'),
-      '',
-      variant('dark'),
-      '  }',
-      '}',
-      '',
-    ].join('\n');
+  const notes = [native
+    ? "/* HeroUI Native · add after heroui-native/styles in global.css. */"
+    : "/* HeroUI React v3 · add after @heroui/styles. */"];
+  if (MODES.some((mode) => theme.overrides[mode]["font-sans"])) {
+    notes.push(native
+      ? "/* Configure custom font weights through Expo and Uniwind. */"
+      : "/* Load any custom fonts used by --font-sans in your application. */");
   }
-  return [
-    '/* HeroUI React v3 · Editable CSS (import after @heroui/styles) */',
-    '/* Load the custom font specified in --font-sans in your application. */',
-    '/* To use the exported --scrollbar color, set --scrollbar-color to var(--scrollbar) var(--scrollbar-track). */',
-    '',
-    webModeCss(theme, 'light'),
-    '',
-    webModeCss(theme, 'dark'),
-    '',
-  ].join('\n');
+  const content = blocks && native ? "@layer theme {\n  :root {\n" + blocks + "\n  }\n}" : blocks;
+  return notes.join("\n") + "\n\n" + (content || "/* Uses the default theme variables. */") + "\n";
 }

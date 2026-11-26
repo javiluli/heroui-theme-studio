@@ -27,8 +27,8 @@ function jumpToAnchor(id: string, anchorTarget: RefObject<HTMLElement | null>) {
 
 export function ComponentJumpPicker({ anchorTarget }: { anchorTarget: RefObject<HTMLElement | null> }) {
   return (
-    <div className="mb-6 max-w-72 @[84rem]/studio:hidden">
-      <Select aria-label="Jump to a component" placeholder="Jump to a component" selectedKey={null}
+    <div className="mb-(--studio-example-gap) max-w-72 @[84rem]/studio:hidden">
+      <Select fullWidth aria-label="Jump to a component" placeholder="Jump to a component" selectedKey={null}
         onSelectionChange={(key) => {
           const slug = COMPONENT_ORDER.find((item) => item === key);
           if (slug) jumpToAnchor(sectionId(slug), anchorTarget);
@@ -156,9 +156,9 @@ export const ComponentIndex = memo(function ComponentIndex({ gallery, anchorTarg
   }, [anchorTarget]);
 
   return (
-    <nav aria-label="Component index" className="sticky top-[calc(var(--studio-header-height,3.5625rem)+4.5rem)] mt-18 hidden min-w-0 px-2 @[84rem]/studio:block">
+    <nav aria-label="Component index" className="sticky top-[calc(var(--studio-header-height)_+_var(--studio-inset))] hidden min-w-0 border-s border-separator ps-4 @[84rem]/studio:block">
       <Typography type="body-xs" color="muted" weight="medium">On this page</Typography>
-      <div ref={indexScroll} className="scrollbar mt-3 flex max-h-[calc(100dvh-var(--studio-header-height,3.5625rem)-7rem)] flex-col gap-6 overflow-y-auto overscroll-contain [@media(hover:hover)]:[&:not(:hover,:focus-within)]:[--scrollbar-color:transparent_transparent]"
+      <div ref={indexScroll} className="scrollbar mt-3 flex max-h-[calc(100dvh-var(--studio-header-height)-4rem)] flex-col gap-6 overflow-y-auto overscroll-contain [@media(hover:hover)]:[&:not(:hover,:focus-within)]:[--scrollbar-color:transparent_transparent]"
         data-scrollbar="thin">
         {COMPONENT_CATEGORIES.map(({ title, slugs }) => {
           const id = categoryId(title);

@@ -1,6 +1,6 @@
 import { isHexColor } from '../theme/conversion';
 import { extractThemeJson } from './response';
-import type { ColorToken, ThemeConfig, ThemeMode } from '../theme/model';
+import type { ColorToken, ThemeConfig, ThemeOverrides } from '../theme/model';
 
 export const AI_CORE_TOKENS = [
   'background', 'foreground', 'surface', 'accent', 'muted',
@@ -78,12 +78,6 @@ export function parseThemeProposal(output: string): ThemeProposal {
   };
 }
 
-function mixHex(a: string, b: string, t: number): string {
-  return '#' + [1, 3, 5].map((i) =>
-    Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - t) + parseInt(b.slice(i, i + 2), 16) * t)
-      .toString(16).padStart(2, '0')).join('').toUpperCase();
-}
-
 function luminance(hex: string): number {
   return [1, 3, 5].map((start) => {
     const n = parseInt(hex.slice(start, start + 2), 16) / 255;
@@ -95,57 +89,21 @@ function readableText(hex: string): string {
   return (luminance(hex) + 0.05) / 0.05 > 1.05 / (luminance(hex) + 0.05) ? '#000000' : '#FFFFFF';
 }
 
-/** Expand the coherent 9-token seed palettes into every official HeroUI color token. */
-function buildPalette(
-  source: AIColors, mode: ThemeMode, base: ThemeConfig,
-): ThemeConfig['palettes'][ThemeMode] {
-  const surface = source.surface;
-  const fg = source.foreground;
-  const dark = mode === 'dark';
-  const mix = (amount: number) => mixHex(surface, fg, amount);
-  return {
-    ...base.palettes[mode],
-    ...source,
-    'surface-foreground': fg,
-    'surface-secondary': mix(dark ? 0.09 : 0.035),
-    'surface-secondary-foreground': fg,
-    'surface-tertiary': mix(dark ? 0.14 : 0.07),
-    'surface-tertiary-foreground': fg,
-    overlay: surface,
-    'overlay-foreground': fg,
-    separator: source.border,
-    default: mix(dark ? 0.18 : 0.085),
-    'default-foreground': fg,
-    'accent-foreground': readableText(source.accent),
-    'field-background': surface,
-    'field-foreground': fg,
-    'field-placeholder': source.muted,
-    'field-border': 'transparent',
-    focus: source.accent,
-    scrollbar: source.border,
-    'success-foreground': readableText(source.success),
-    'warning-foreground': readableText(source.warning),
-    'danger-foreground': readableText(source.danger),
-    segment: mix(dark ? 0.23 : 0.055),
-    'segment-foreground': fg,
-  };
-}
-
 export function applyThemeProposal(base: ThemeConfig, proposal: ThemeProposal): ThemeConfig {
-  const { light, dark } = base.modeSettings ?? {};
+  const apply = (current: ThemeOverrides, colors: AIColors): ThemeOverrides => ({
+    ...current,
+    ...colors,
+    "accent-foreground": readableText(colors.accent),
+    "success-foreground": readableText(colors.success),
+    "warning-foreground": readableText(colors.warning),
+    "danger-foreground": readableText(colors.danger),
+    radius: proposal.radius + "px",
+  });
   return {
-    ...base,
     name: proposal.name,
-    radius: proposal.radius,
-    ...(base.modeSettings && {
-      modeSettings: {
-        light: light && { ...light, radius: proposal.radius },
-        dark: dark && { ...dark, radius: proposal.radius },
-      },
-    }),
-    palettes: {
-      light: buildPalette(proposal.light, 'light', base),
-      dark: buildPalette(proposal.dark, 'dark', base),
+    overrides: {
+      light: apply(base.overrides.light, proposal.light),
+      dark: apply(base.overrides.dark, proposal.dark),
     },
   };
 }

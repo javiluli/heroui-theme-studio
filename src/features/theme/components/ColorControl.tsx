@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { memo, useState, type CSSProperties } from "react";
 import {
   Button,
   ColorArea,
@@ -7,25 +7,21 @@ import {
   ColorSlider,
   ColorSwatch,
   Label,
-  Tooltip,
+  Popover,
   parseColor,
   type Color,
 } from "@heroui/react";
-import { Info, RotateCcw, Shuffle } from "lucide-react";
+import { RotateCcw, Shuffle } from "lucide-react";
 import type { ColorToken } from "../model";
-import { cssColorValue } from "../conversion";
+import { readColorHex } from "../conversion";
 import { TOKEN_DESCRIPTIONS } from "../token-descriptions";
 import { EditorTokenTarget } from "./EditorTokenTarget";
 
 interface ColorControlProps {
   token: ColorToken;
-  value: string;
-  resetValue: string;
-  hex: string;
+  value?: string;
   highlighted?: boolean;
-  onChange: (token: ColorToken, color: string) => void;
-  onPreview: (token: ColorToken, color: string) => void;
-  onClearPreview: (token: ColorToken) => void;
+  onChange: (token: ColorToken, color?: string) => void;
 }
 
 function pickerHex(color: Color): string {
@@ -37,44 +33,26 @@ function pickerHex(color: Color): string {
 export const ColorControl = memo(function ColorControl({
   token,
   value,
-  resetValue,
-  hex,
   highlighted,
   onChange,
-  onPreview,
-  onClearPreview,
 }: ColorControlProps) {
-  // Keep HSB throughout dragging; sending rounded HEX back as the controlled
-  // picker value on every pointer move made hue and thumb positions jump.
-  const [pickerColor, setPickerColor] = useState<Color>(() =>
-    parseColor(hex).toFormat("hsb"),
-  );
-  const lastSentHex = useRef<string | null>(null);
+  const [pickerColor, setPickerColor] = useState(() => parseColor("#000000").toFormat("hsb"));
+  const [originalHex, setOriginalHex] = useState("#000000");
   const [overlayBackground, setOverlayBackground] = useState<string>();
-  const clearOnClose = useCallback((element: HTMLElement | null) => {
-    if (!element) onClearPreview(token);
-  }, [onClearPreview, token]);
-
-  useEffect(() => {
-    // The parent reflects our own edits as HEX. Don't replace the active HSB
-    // object with that rounded HEX while the user is dragging the picker.
-    const ownEdit = hex === lastSentHex.current;
-    lastSentHex.current = null;
-    if (!ownEdit) setPickerColor(parseColor(hex).toFormat("hsb"));
-  }, [hex, value]);
-
-  const changeColor = (next: Color) => {
-    setPickerColor(next.toFormat("hsb"));
-    const selectedHex = pickerHex(next);
-    onPreview(token, selectedHex === hex ? value : selectedHex);
+  const openPicker = () => {
+    const color = getComputedStyle(document.documentElement).getPropertyValue(`--${token}`).trim();
+    const hex = readColorHex(color);
+    setOriginalHex(hex);
+    setPickerColor(parseColor(hex).toFormat("hsb"));
+    if (token === "overlay") setOverlayBackground(color);
   };
 
   const commitColor = (next: Color) => {
-    const selectedHex = pickerHex(next);
-    if (selectedHex !== hex) {
-      lastSentHex.current = selectedHex;
-      onChange(token, selectedHex);
-    } else onClearPreview(token);
+    const hex = pickerHex(next);
+    if (hex !== originalHex) {
+      setOriginalHex(hex);
+      onChange(token, hex);
+    }
   };
 
   const applyRgbColor = (next: Color) => {
@@ -94,42 +72,39 @@ export const ColorControl = memo(function ColorControl({
     <EditorTokenTarget
       variable={`--${token}`}
       highlighted={highlighted}
-      className="@container/color-tile min-w-0 rounded-(--field-radius) bg-default text-default-foreground"
+      className="min-w-0 rounded-(--field-radius) border border-separator bg-surface text-surface-foreground focus-within:border-focus"
     >
-      <div className="grid min-h-full min-w-0 grid-cols-1 items-center @min-[10.5rem]/color-tile:grid-cols-[minmax(0,1fr)_auto]">
-        <ColorPicker
-          value={pickerColor}
-          onChange={changeColor}
+      <ColorPicker
+        value={pickerColor}
+        onChange={(color) => setPickerColor(color.toFormat("hsb"))}
+      >
+        <ColorPicker.Trigger
+          className="w-full min-w-0"
+          aria-label={`Edit color for --${token}`}
+          onPress={openPicker}
         >
-          <ColorPicker.Trigger
-            className="w-full min-w-0"
-            aria-label={`Edit color for --${token}`}
-            onPress={() => {
-              setPickerColor(parseColor(hex).toFormat("hsb"));
-              if (token === "overlay") setOverlayBackground(cssColorValue(value));
-            }}
-          >
-            <span className="flex min-h-9 w-full min-w-0 items-center gap-1 px-1 py-1.5 text-left">
-              <span className="shrink-0" aria-hidden="true">
-                <ColorSwatch
-                  color={pickerColor}
-                  size="xs"
-                  style={{ "--color-swatch-current": `var(--${token})` } as CSSProperties}
-                />
-              </span>
-              <span className="min-w-0 wrap-anywhere text-xs leading-tight font-medium">
-                --{token}
-              </span>
+          <span className="flex min-h-12 w-full min-w-0 items-center gap-2 p-2 text-left">
+            <span className="shrink-0 rounded-md ring-1 ring-foreground/20" aria-hidden="true">
+              <ColorSwatch
+                color={pickerColor}
+                shape="square"
+                size="md"
+                style={{ "--color-swatch-current": `var(--${token})` } as CSSProperties}
+              />
             </span>
-          </ColorPicker.Trigger>
+            <code className="min-w-0 wrap-anywhere text-xs leading-4 font-medium">
+              --{token}
+            </code>
+          </span>
+        </ColorPicker.Trigger>
 
-          <ColorPicker.Popover
-            ref={clearOnClose}
-            placement="bottom end"
-            style={token === "overlay" ? {
-              "--overlay": overlayBackground ?? cssColorValue(value),
-            } as CSSProperties : undefined}
-          >
+        <ColorPicker.Popover
+          placement="bottom end"
+          style={token === "overlay" ? {
+            "--overlay": overlayBackground,
+          } as CSSProperties : undefined}
+        >
+          <Popover.Dialog aria-label={`Edit --${token}`}>
             <div className="flex min-w-0 w-full flex-col gap-3 p-1">
               <code className="min-w-0 break-all whitespace-normal text-xs font-semibold text-foreground">
                 --{token}
@@ -156,7 +131,7 @@ export const ColorControl = memo(function ColorControl({
                   <Shuffle size={16} aria-hidden="true" />
                 </Button>
               </div>
-              {token === "field-border" && (
+              {(token === "field-border" || token === "backdrop" || token === "scrollbar-thumb") && (
                 <ColorSlider channel="alpha" onChangeEnd={commitColor}>
                   <Label>Alpha</Label>
                   <ColorSlider.Output />
@@ -176,33 +151,16 @@ export const ColorControl = memo(function ColorControl({
                   <ColorField.Input placeholder="Hex color" />
                 </ColorField.Group>
               </ColorField>
+              <p className="max-w-64 text-xs leading-relaxed text-overlay-foreground">{TOKEN_DESCRIPTIONS[`--${token}`]}</p>
+              {value !== undefined && (
+                <Button slot="close" size="sm" variant="ghost" onPress={() => onChange(token)}>
+                  <RotateCcw size={14} aria-hidden="true" /> Reset color
+                </Button>
+              )}
             </div>
-          </ColorPicker.Popover>
-        </ColorPicker>
-        <div className="flex justify-end">
-          <Button
-            isIconOnly
-            size="sm"
-            variant="ghost"
-            aria-label={`Reset --${token}`}
-            isDisabled={value === resetValue}
-            onPress={() => onChange(token, resetValue)}
-          >
-            <RotateCcw size={14} aria-hidden="true" />
-          </Button>
-          <Tooltip delay={200}>
-            <Button isIconOnly size="sm" variant="ghost" aria-label={`About --${token}`}>
-              <Info size={14} aria-hidden="true" />
-            </Button>
-            <Tooltip.Content placement="right">
-              <div className="max-w-56 space-y-1 leading-relaxed">
-                <strong><code>--{token}</code></strong>
-                <p>{TOKEN_DESCRIPTIONS[`--${token}`]}</p>
-              </div>
-            </Tooltip.Content>
-          </Tooltip>
-        </div>
-      </div>
+          </Popover.Dialog>
+        </ColorPicker.Popover>
+      </ColorPicker>
     </EditorTokenTarget>
   );
 });

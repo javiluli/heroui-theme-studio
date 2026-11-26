@@ -1,102 +1,152 @@
-import { memo } from "react";
+import { useEffect, useState } from "react";
 import { Button, Label, ListBox, NumberField, Select } from "@heroui/react";
-import { ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
-import { DEFAULT_THEME, type ThemeConfig } from "../model";
+import { RotateCcw } from "lucide-react";
+import {
+  LENGTH_TOKENS,
+  type LengthToken,
+  type ThemeMode,
+  type ThemeOverrides,
+  type ThemeToken,
+} from "../model";
 import { FONT_STACKS } from "../typography";
 import type { EditableThemeVariable } from "../token-descriptions";
 import { EditorTokenTarget } from "./EditorTokenTarget";
 
+const lengths = Object.keys(LENGTH_TOKENS) as LengthToken[];
 const fonts = [
   { id: "system", label: "Inter / system" },
   { id: "rounded", label: "Rounded" },
   { id: "serif", label: "Serif" },
   { id: "mono", label: "Monospace" },
 ] as const;
-const radiusFormat = { maximumFractionDigits: 20 };
 
-function RadiusField({ token, value, max, initial, highlighted, onChange }: {
-  token: "radius" | "field-radius";
-  value: number;
-  max: number;
-  initial: number;
-  highlighted: boolean;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <EditorTokenTarget variable={`--${token}`} highlighted={highlighted} className="min-w-0 rounded-(--field-radius)">
-      <div className="flex min-w-0 items-end gap-1">
-        <div className="min-w-0 flex-1">
-          <NumberField
-            value={value}
-            minValue={0}
-            maxValue={max}
-            formatOptions={radiusFormat}
-            fullWidth
-            onChange={(next) => {
-              if (typeof next === "number" && Number.isFinite(next)) onChange(next);
-            }}
-          >
-            <Label><span className="text-xs"><code>--{token}</code> <span className="text-muted">px</span></span></Label>
-            <NumberField.Group className="flex">
-              <NumberField.Input className="flex-1" inputMode="decimal" />
-              <div className="flex h-full shrink-0 flex-col border-s border-field-placeholder/15">
-                <NumberField.IncrementButton className="h-1/2 w-6 border-0">
-                  <ChevronUp size={11} aria-hidden="true" />
-                </NumberField.IncrementButton>
-                <NumberField.DecrementButton className="h-1/2 w-6 border-0">
-                  <ChevronDown size={11} aria-hidden="true" />
-                </NumberField.DecrementButton>
-              </div>
-            </NumberField.Group>
-          </NumberField>
-        </div>
-        <Button size="sm" isIconOnly variant="ghost" aria-label={`Reset --${token}`} onPress={() => onChange(initial)}>
-          <RotateCcw size={14} aria-hidden="true" />
-        </Button>
-      </div>
-    </EditorTokenTarget>
-  );
-}
-
-export const ThemeSettingsPanel = memo(function ThemeSettingsPanel({
-  radius, fieldRadius, fontSans, highlightedVariable, onRadius, onFieldRadius, onFontFamily,
+export function ThemeSettingsPanel({
+  overrides,
+  mode,
+  highlightedVariable,
+  onToken,
 }: {
-  radius: number;
-  fieldRadius: number;
-  fontSans: string;
+  overrides: ThemeOverrides;
+  mode: ThemeMode;
   highlightedVariable: EditableThemeVariable | null;
-  onRadius: (value: number) => void;
-  onFieldRadius: (value: number) => void;
-  onFontFamily: (value: ThemeConfig["fontFamily"]) => void;
+  onToken: (token: ThemeToken, value?: string) => void;
 }) {
-  const selectedFont = fonts.find((font) => FONT_STACKS[font.id] === fontSans);
+  const [pixels, setPixels] = useState<Partial<Record<LengthToken, number>>>(
+    {},
+  );
+  useEffect(() => {
+    // A computed font size resolves CSS lengths without layout rounding.
+    const probe = document.createElement("span");
+    probe.style.cssText =
+      "position:absolute;visibility:hidden;pointer-events:none";
+    document.body.append(probe);
+    const computed = getComputedStyle(probe);
+    setPixels(
+      Object.fromEntries(
+        lengths.map((token) => {
+          probe.style.fontSize = `var(--${token}, 0px)`;
+          return [token, Number.parseFloat(computed.fontSize)];
+        }),
+      ),
+    );
+    probe.remove();
+  }, [mode, overrides]);
+
+  const font = overrides["font-sans"];
+  const selectedFont = fonts.find(({ id }) => FONT_STACKS[id] === font);
+  const reset = (token: ThemeToken) => (
+    <Button
+      size="sm"
+      isIconOnly
+      variant="ghost"
+      aria-label={`Reset --${token}`}
+      isDisabled={overrides[token] === undefined}
+      onPress={() => onToken(token)}
+    >
+      <RotateCcw size={14} aria-hidden="true" />
+    </Button>
+  );
+
   return (
-    <section className="space-y-2" aria-label="Radius and typography">
-      <h3 className="text-sm font-semibold">Radius and typography</h3>
-      <div className="grid grid-cols-2 items-end gap-2">
-        <RadiusField token="radius" value={radius} max={32} initial={DEFAULT_THEME.radius} onChange={onRadius} highlighted={highlightedVariable === "--radius"} />
-        <RadiusField token="field-radius" value={fieldRadius} max={48} initial={DEFAULT_THEME.fieldRadius} onChange={onFieldRadius} highlighted={highlightedVariable === "--field-radius"} />
+    <section className="space-y-2" aria-labelledby="theme-appearance">
+      <h3 id="theme-appearance" className="text-sm font-semibold">
+        Radii, borders and typography
+      </h3>
+      <div className="@container/lengths">
+        <div className="grid items-start gap-2 @min-[18rem]/lengths:grid-cols-2">
+          {lengths.map((token) => (
+            <EditorTokenTarget
+              key={token}
+              variable={`--${token}`}
+              highlighted={highlightedVariable === `--${token}`}
+              className="min-w-0"
+            >
+              <NumberField
+                fullWidth
+                value={pixels[token] ?? NaN}
+                minValue={0}
+                maxValue={Math.max(LENGTH_TOKENS[token], pixels[token] || 0)}
+                formatOptions={{ maximumFractionDigits: 2 }}
+                onChange={(next) => {
+                  if (Number.isFinite(next)) onToken(token, next + "px");
+                }}
+              >
+                <Label>
+                  <span className="wrap-anywhere text-xs font-medium">
+                    <code>--{token}</code>{" "}
+                    <span className="text-muted">px</span>
+                  </span>
+                </Label>
+                <NumberField.Group>
+                  <NumberField.DecrementButton />
+                  <NumberField.Input inputMode="decimal" />
+                  <NumberField.IncrementButton />
+                </NumberField.Group>
+              </NumberField>
+              {overrides[token] !== undefined && (
+                <div className="flex justify-end">{reset(token)}</div>
+              )}
+            </EditorTokenTarget>
+          ))}
+        </div>
       </div>
-      <EditorTokenTarget variable="--font-sans" highlighted={highlightedVariable === "--font-sans"} className="rounded-(--field-radius)">
-        <Select selectedKey={selectedFont?.id ?? null} placeholder={fontSans}
-          onSelectionChange={(key) => {
-            const font = fonts.find((option) => option.id === key);
-            if (font) onFontFamily(font.id);
-          }}
-        >
-          <Label><code>--font-sans</code></Label>
-          <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
-          <Select.Popover>
-            <ListBox>
-              {fonts.map((font) => (
-                <ListBox.Item key={font.id} id={font.id} textValue={font.label}>
-                  {font.label}<ListBox.ItemIndicator />
-                </ListBox.Item>
-              ))}
-            </ListBox>
-          </Select.Popover>
-        </Select>
+      <EditorTokenTarget
+        variable="--font-sans"
+        highlighted={highlightedVariable === "--font-sans"}
+      >
+        <div className="flex min-w-0 items-end gap-1">
+          <div className="min-w-0 flex-1">
+            <Select
+              fullWidth
+              selectedKey={selectedFont?.id ?? null}
+              placeholder={font ?? "HeroUI default"}
+              onSelectionChange={(key) => {
+                const option = fonts.find(({ id }) => id === key);
+                if (option) onToken("font-sans", FONT_STACKS[option.id]);
+              }}
+            >
+              <Label>
+                <code>--font-sans</code>
+              </Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {fonts.map(({ id, label }) => (
+                    <ListBox.Item key={id} id={id} textValue={label}>
+                      {label}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
+          </div>
+          {reset("font-sans")}
+        </div>
       </EditorTokenTarget>
     </section>
   );
-});
+}

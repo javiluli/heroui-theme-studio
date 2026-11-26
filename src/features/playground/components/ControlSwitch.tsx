@@ -11,11 +11,11 @@ export function ControlSwitch({
 }) {
   return (
     <Switch isSelected={value} onChange={onChange}>
-      <Switch.Control>
-        <Switch.Thumb />
-      </Switch.Control>
-      <Switch.Content>
-        <Label>{label}</Label>
+      <Switch.Content className="min-h-6 w-full justify-between">
+        <Label><span className="font-mono text-xs leading-4 font-normal text-muted">{label}</span></Label>
+        <Switch.Control>
+          <Switch.Thumb />
+        </Switch.Control>
       </Switch.Content>
     </Switch>
   );

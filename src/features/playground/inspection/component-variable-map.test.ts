@@ -37,7 +37,7 @@ describe("HeroUI component variable guides", () => {
     }));
     expect(getComponentVariableGuide("scroll-shadow").parts).toContainEqual(expect.objectContaining({
       kind: "reference",
-      variables: expect.arrayContaining(["--scrollbar"]),
+      variables: expect.arrayContaining(["--scrollbar-thumb"]),
     }));
   });
 

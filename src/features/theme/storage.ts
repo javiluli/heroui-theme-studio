@@ -1,118 +1,97 @@
-import { COLOR_TOKENS, MODES, type ThemeConfig, type ThemeMode } from './model';
-import { LEGACY_DEFAULT_PALETTES } from './legacy-default';
-import { createPreset } from './templates';
-import { isEditableColor } from './conversion';
-import { isAllowedFontSans } from './mode-layout';
+import { isThemeValue } from "./conversion";
+import { DEFAULT_THEME, MODES, isThemeToken, type ThemeConfig, type ThemeMode, type ThemeOverrides } from "./model";
+import { LEGACY_DEFAULT_PALETTES } from "./legacy-default";
+import { FONT_STACKS } from "./typography";
 
-/** v7 retains custom colors across both native HeroUI and Theme Builder presets. */
-export const STORAGE_KEY = 'hero-theme-studio:theme:v7';
-const LINK_PREFERENCE_KEY = 'hero-theme-studio:native-color-links';
-const MODE_PREFERENCE_KEY = 'hero-theme-studio:mode';
+const STORAGE_PREFIX = "hero-theme-studio:theme:v";
+const MODE_KEY = "hero-theme-studio:mode";
+
+// v6/v7 stored these resolved defaults alongside actual edits.
+const formerDefaults: Record<string, readonly [string, string?]> = {
+  "accent": ["oklch(0.6204 0.195 253.83)"],
+  "accent-foreground": ["oklch(0.9911 0 0)"],
+  "background": ["oklch(0.9702 0 0)", "oklch(12% 0.005 285.823)"],
+  "border": ["oklch(90% 0.004 286.32)", "oklch(28% 0.006 286.033)"],
+  "danger": ["oklch(0.6532 0.2328 25.74)", "oklch(0.594 0.1967 24.63)"],
+  "danger-foreground": ["oklch(0.9911 0 0)"],
+  "default": ["oklch(94% 0.001 286.375)", "oklch(27.4% 0.006 286.033)"],
+  "default-foreground": ["oklch(0.2103 0.0059 285.89)", "oklch(0.9911 0 0)"],
+  "field-background": ["oklch(100% 0 0)", "oklch(0.2103 0.0059 285.89)"],
+  "field-border": ["transparent"],
+  "field-foreground": ["oklch(0.2103 0.0059 285.89)", "oklch(0.9911 0 0)"],
+  "field-placeholder": ["oklch(0.5517 0.0138 285.94)", "oklch(70.5% 0.015 286.067)"],
+  "focus": ["oklch(0.6204 0.195 253.83)"],
+  "foreground": ["oklch(0.2103 0.0059 285.89)", "oklch(0.9911 0 0)"],
+  "muted": ["oklch(0.5517 0.0138 285.94)", "oklch(70.5% 0.015 286.067)"],
+  "overlay": ["oklch(100% 0 0)", "oklch(0.2103 0.0059 285.89)"],
+  "overlay-foreground": ["oklch(0.2103 0.0059 285.89)", "oklch(0.9911 0 0)"],
+  "scrollbar": ["oklch(87.10% 0.0015 253.83)", "oklch(70.50% 0.0015 253.83)"],
+  "segment": ["oklch(100% 0 0)", "oklch(0.3964 0.01 285.93)"],
+  "segment-foreground": ["oklch(0.2103 0.0059 285.89)", "oklch(0.9911 0 0)"],
+  "separator": ["oklch(92% 0.004 286.32)", "oklch(25% 0.006 286.033)"],
+  "success": ["oklch(0.7329 0.1935 150.81)"],
+  "success-foreground": ["oklch(0.2103 0.0059 285.89)"],
+  "surface": ["oklch(100% 0 0)", "oklch(0.2103 0.0059 285.89)"],
+  "surface-foreground": ["oklch(0.2103 0.0059 285.89)", "oklch(0.9911 0 0)"],
+  "surface-secondary": ["oklch(0.9524 0.0013 286.37)", "oklch(0.257 0.0037 286.14)"],
+  "surface-secondary-foreground": ["oklch(0.2103 0.0059 285.89)", "oklch(0.9911 0 0)"],
+  "surface-tertiary": ["oklch(0.9373 0.0013 286.37)", "oklch(0.2721 0.0024 247.91)"],
+  "surface-tertiary-foreground": ["oklch(0.2103 0.0059 285.89)", "oklch(0.9911 0 0)"],
+  "warning": ["oklch(0.7819 0.1585 72.33)", "oklch(0.8203 0.1388 76.34)"],
+  "warning-foreground": ["oklch(0.2103 0.0059 285.89)"],
+};
 
 export function loadThemeMode(): ThemeMode {
-  try { return window.localStorage.getItem(MODE_PREFERENCE_KEY) === 'light' ? 'light' : 'dark'; }
-  catch { return 'dark'; }
+  try { return localStorage.getItem(MODE_KEY) === "light" ? "light" : "dark"; }
+  catch { return "dark"; }
 }
 
-export function saveThemeMode(mode: ThemeMode): void {
-  try { window.localStorage.setItem(MODE_PREFERENCE_KEY, mode); }
-  catch { /* Private sessions may block storage. */ }
-}
-
-export function loadNativeColorLinks(): boolean {
-  try { return window.localStorage.getItem(LINK_PREFERENCE_KEY) !== 'off'; }
-  catch { return true; }
-}
-
-export function saveNativeColorLinks(enabled: boolean): void {
-  try { window.localStorage.setItem(LINK_PREFERENCE_KEY, enabled ? 'on' : 'off'); }
-  catch { /* Private sessions may block storage. */ }
-}
-
-export function isThemeConfig(value: unknown): value is ThemeConfig {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-  const data = value as Partial<ThemeConfig>;
-  if (typeof data.name !== 'string' || data.name.length > 80) return false;
-  if (!Number.isFinite(data.radius) || data.radius! < 0 || data.radius! > 32) return false;
-  if (!Number.isFinite(data.fieldRadius) || data.fieldRadius! < 0 || data.fieldRadius! > 48) return false;
-  if (!['system', 'rounded', 'serif', 'mono'].includes(data.fontFamily ?? '')) return false;
-  if (data.modeSettings !== undefined) {
-    if (!data.modeSettings || typeof data.modeSettings !== 'object' || Array.isArray(data.modeSettings)) return false;
-    for (const mode of MODES) {
-      const settings = data.modeSettings[mode];
-      if (settings === undefined) continue;
-      if (typeof settings !== 'object' || settings === null) return false;
-      if (!Number.isFinite(settings.radius) || settings.radius < 0 || settings.radius > 32) return false;
-      if (!Number.isFinite(settings.fieldRadius) || settings.fieldRadius < 0 || settings.fieldRadius > 48) return false;
-      if (!isAllowedFontSans(settings.fontSans)) return false;
-    }
-  }
-  if (!data.palettes || typeof data.palettes !== 'object') return false;
-  return MODES.every((mode) => {
-    const palette = data.palettes?.[mode];
-    return palette && COLOR_TOKENS.every((token) => isEditableColor(palette[token]));
-  });
-}
-
-function migrateStoredTheme(raw: unknown, legacy: boolean): ThemeConfig | null {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-  const data = raw as Record<string, unknown>;
-  const base = createPreset();
-  const modes = data.palettes as Record<string, unknown> | undefined;
-  if (!modes || typeof modes !== 'object') return null;
-  const palettes = { light: { ...base.palettes.light }, dark: { ...base.palettes.dark } };
-  for (const mode of MODES) {
-    const original = modes[mode];
-    if (!original || typeof original !== 'object') return null;
-    for (const token of COLOR_TOKENS) {
-      const value = (original as Record<string, unknown>)[token];
-      if (isEditableColor(value)) {
-        palettes[mode][token] = legacy && value === LEGACY_DEFAULT_PALETTES[mode][token]
-          ? base.palettes[mode][token] : value;
-      }
-    }
-    // Previously absent contract tokens get their nearest semantic predecessor.
-    const old = original as Record<string, unknown>;
-    if (!isEditableColor(old.focus) && isEditableColor(old.accent)) palettes[mode].focus = old.accent;
-    if (!isEditableColor(old['field-placeholder']) && isEditableColor(old.muted)) {
-      palettes[mode]['field-placeholder'] = old.muted;
-    }
-  }
-  const next: ThemeConfig = {
-    name: typeof data.name === 'string' ? data.name : base.name,
-    radius: typeof data.radius === 'number' ? data.radius : 8,
-    fieldRadius: typeof data.fieldRadius === 'number'
-      ? data.fieldRadius
-      : Math.round((typeof data.radius === 'number' ? data.radius : 8) *
-        (typeof data.fieldRadiusScale === 'number' ? data.fieldRadiusScale : 1.5)),
-    fontFamily: ['system', 'rounded', 'serif', 'mono'].includes(String(data.fontFamily))
-      ? data.fontFamily as ThemeConfig['fontFamily'] : 'system',
-    palettes,
-    ...(data.modeSettings !== undefined ? { modeSettings: data.modeSettings as ThemeConfig['modeSettings'] } : {}),
-  };
-  return isThemeConfig(next) ? next : null;
+export function saveThemeMode(mode: ThemeMode) {
+  try { localStorage.setItem(MODE_KEY, mode); }
+  catch { /* Storage can be disabled. */ }
 }
 
 export function loadTheme(): ThemeConfig {
-  if (typeof window === 'undefined') return createPreset();
-  let storage: Storage;
-  try { storage = window.localStorage; }
-  catch { return createPreset(); }
-
-  for (const version of [7, 6, 5, 4, 3]) {
+  for (const version of [8, 7, 6, 5, 4, 3]) {
     try {
-      const stored = storage.getItem(version === 7 ? STORAGE_KEY : `hero-theme-studio:theme:v${version}`);
+      const stored = localStorage.getItem(STORAGE_PREFIX + version);
       if (!stored) continue;
-      const migrated = migrateStoredTheme(JSON.parse(stored) as unknown, version <= 5);
-      if (migrated) return migrated;
-    } catch {
-      // A damaged record must not mask a recoverable theme saved under an older key.
-    }
+      const data = JSON.parse(stored);
+      const modes = version === 8 ? data.overrides : data.palettes;
+      if (!modes?.light || !modes.dark) continue;
+      const overrides: ThemeConfig["overrides"] = { light: {}, dark: {} };
+      for (const mode of MODES) {
+        const values: ThemeOverrides = overrides[mode];
+        for (const [name, value] of Object.entries(modes[mode])) {
+          const token = name === "scrollbar" ? "scrollbar-thumb" : name;
+          if (!isThemeToken(token) || !isThemeValue(token, value)) continue;
+          if (version < 8 && data.name !== "HeroUI Theme Builder") {
+            const former = formerDefaults[name];
+            const snapshot = LEGACY_DEFAULT_PALETTES[mode][token as keyof typeof LEGACY_DEFAULT_PALETTES.light];
+            const baseline = mode === "dark" ? former?.[1] ?? former?.[0] : former?.[0];
+            if (value === baseline || (version <= 5 && value === snapshot)) continue;
+          }
+          if (token !== "scrollbar-thumb" || value !== "var(--scrollbar-thumb)") values[token] = value;
+        }
+        if (version === 8) continue;
+        const settings = data.modeSettings?.[mode] ?? data;
+        const { radius, fieldRadius, fieldRadiusScale } = settings;
+        if (typeof radius === "number" && radius >= 0 && (radius !== 8 || settings !== data)) values.radius = radius + "px";
+        if (typeof fieldRadius === "number" && fieldRadius >= 0 && (fieldRadius !== 12 || values.radius !== undefined)) {
+          values["field-radius"] = fieldRadius + "px";
+        } else if (typeof fieldRadiusScale === "number" && fieldRadiusScale >= 0 && fieldRadiusScale !== 1.5) {
+          values["field-radius"] = `calc(var(--radius) * ${fieldRadiusScale})`;
+        }
+        const font = settings.fontSans ?? FONT_STACKS[data.fontFamily as keyof typeof FONT_STACKS];
+        if (isThemeValue("font-sans", font) && (font !== FONT_STACKS.system || settings !== data)) values["font-sans"] = font;
+      }
+      return { name: typeof data.name === "string" ? data.name.slice(0, 80) : DEFAULT_THEME.name, overrides };
+    } catch { /* Try the preceding version if a saved entry is unreadable. */ }
   }
-  return createPreset();
+  return DEFAULT_THEME;
 }
 
-export function saveTheme(theme: ThemeConfig): void {
-  try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(theme)); }
-  catch { /* Private sessions may block storage. */ }
+export function saveTheme(theme: ThemeConfig) {
+  try { localStorage.setItem(STORAGE_PREFIX + 8, JSON.stringify(theme)); }
+  catch { /* Storage can be disabled. */ }
 }

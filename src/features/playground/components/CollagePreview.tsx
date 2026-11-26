@@ -122,7 +122,7 @@ function FileAction({
 
 function CollageControls() {
   return (
-    <div className="flex min-w-0 flex-col gap-10">
+    <div className="flex min-w-0 flex-col gap-6">
       <TextField isRequired type="email">
         <Label>Your email</Label>
         <Input placeholder="john@email.com" />
@@ -365,8 +365,8 @@ function CollageProfile() {
 
 function CollageMiddle() {
   return (
-    <div className="flex min-w-0 flex-col gap-10">
-      <div className="mx-auto flex w-full max-w-71 min-w-0 flex-col gap-9">
+    <div className="flex min-w-0 flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-71 min-w-0 flex-col gap-6">
         <div className="self-center">
           <AvatarGroup aria-label="Seven community members">
             {avatarColors.map((color) => (
@@ -558,7 +558,7 @@ function CollageRight() {
     toast(message);
   };
   return (
-    <div className="mx-auto flex w-full max-w-85 min-w-0 flex-col gap-5 @[42rem]/collage:col-span-2 @[58rem]/collage:col-span-1">
+    <div className="mx-auto flex w-full max-w-85 min-w-0 flex-col gap-5 @[42rem]/collage:col-span-2 @[45rem]/collage:col-span-1">
       <div className="mx-auto w-full max-w-80">
         {signupOpen ? (
           <SignupPreview onClose={() => setSignupOpen(false)} />
@@ -637,7 +637,7 @@ export function CollagePreview() {
       <div
         lang="en"
         data-gallery-layout="collage"
-        className="mx-auto grid max-w-255 min-w-0 items-start gap-x-3 gap-y-10 py-10 text-sm @[42rem]/collage:grid-cols-[minmax(0,256fr)_minmax(0,400fr)] @[58rem]/collage:grid-cols-[minmax(0,256fr)_minmax(0,400fr)_minmax(0,340fr)]"
+        className="mx-auto grid max-w-255 min-w-0 items-start gap-x-3 gap-y-6 p-1 text-sm @[42rem]/collage:grid-cols-[minmax(0,256fr)_minmax(0,400fr)] @[45rem]/collage:grid-cols-[minmax(0,256fr)_minmax(0,400fr)_minmax(0,340fr)]"
       >
         <CollageControls />
         <CollageMiddle />

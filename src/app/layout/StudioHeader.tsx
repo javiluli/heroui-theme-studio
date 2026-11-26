@@ -1,17 +1,15 @@
 import { HeroUILogo } from "../../components/HeroUILogo";
-import { Code2, Github, Moon, Sparkles, Sun } from "lucide-react";
+import { Code2, Github, Sparkles } from "lucide-react";
 import { Button, Link, Tooltip, Typography } from "@heroui/react";
-import type { Ref } from "react";
-import type { ThemeMode } from "../../features/theme/model";
+import type { ReactNode, Ref } from "react";
 import type { ThemePlatform } from "../../features/theme/export-css";
-import { Flex } from "../../components/layout";
+import { Grid } from "../../components/layout";
 
 interface StudioHeaderProps {
   platform: ThemePlatform;
-  mode: ThemeMode;
+  navigation?: ReactNode;
   aiOpen: boolean;
   aiTrigger: Ref<HTMLButtonElement>;
-  onModeChange: (mode: ThemeMode) => void;
   onToggleAI: () => void;
   onExport: () => void;
 }
@@ -19,26 +17,30 @@ interface StudioHeaderProps {
 /** Persistent actions for the active preview. */
 export function StudioHeader({
   platform,
-  mode,
+  navigation,
   aiOpen,
   aiTrigger,
-  onModeChange,
   onToggleAI,
   onExport,
 }: StudioHeaderProps) {
   const docsPlatform = platform === "native" ? "native" : "react";
   const docsLabel = `HeroUI ${platform === "native" ? "Native" : "React"} documentation`;
   return (
-    <Flex className="min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2">
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <Typography.Paragraph size="sm" weight="semibold">
+    <Grid className="min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-(--studio-column-gap) gap-y-2 py-2 @[52rem]/studio:grid-cols-(--studio-split-columns) @[72rem]/studio:grid-cols-(--studio-header-columns) @[84rem]/studio:grid-cols-(--studio-web-columns)">
+      <div className="flex min-w-0 flex-col px-2">
+        <Typography.Paragraph size="base" weight="semibold">
           HeroUI Theme Studio
         </Typography.Paragraph>
-        <span className="text-xs text-muted">
+        <span className="sr-only text-xs text-muted @[36rem]/studio:not-sr-only">
           Unofficial theme generator for HeroUI v3
         </span>
       </div>
-      <div className="flex items-center gap-1.5">
+      {navigation && (
+        <div className="col-span-2 row-start-2 w-fit max-w-full justify-self-center @[52rem]/studio:col-span-1 @[52rem]/studio:col-start-2 @[72rem]/studio:row-start-1">
+          {navigation}
+        </div>
+      )}
+      <div className="col-start-2 row-start-1 flex items-center justify-self-end gap-1 @[72rem]/studio:col-start-3">
         <Tooltip>
           <Link
             href="https://github.com/javiluli/heroui-theme-studio"
@@ -46,8 +48,8 @@ export function StudioHeader({
             rel="noreferrer"
             aria-label="GitHub repository"
           >
-            <span className="grid size-9 place-items-center">
-              <Github size={20} aria-hidden="true" />
+            <span className="grid size-11 place-items-center md:size-10">
+              <Github size={18} aria-hidden="true" />
             </span>
           </Link>
           <Tooltip.Content>GitHub repository</Tooltip.Content>
@@ -59,24 +61,15 @@ export function StudioHeader({
             rel="noreferrer"
             aria-label={docsLabel}
           >
-            <span className="grid size-9 place-items-center">
+            <span className="grid size-11 place-items-center md:size-10">
               <HeroUILogo />
             </span>
           </Link>
           <Tooltip.Content>{docsLabel}</Tooltip.Content>
         </Tooltip>
         <Button
-          variant="ghost"
-          isIconOnly
-          onPress={() => onModeChange(mode === "light" ? "dark" : "light")}
-          aria-label={
-            mode === "light" ? "Switch to dark mode" : "Switch to light mode"
-          }
-        >
-          {mode === "light" ? <Moon /> : <Sun />}
-        </Button>
-        <Button
-          variant={aiOpen ? "secondary" : "outline"}
+          size="lg"
+          variant={aiOpen ? "tertiary" : "ghost"}
           ref={aiTrigger}
           isIconOnly
           onPress={onToggleAI}
@@ -84,17 +77,19 @@ export function StudioHeader({
           aria-controls={aiOpen ? "theme-ai-chat" : undefined}
           aria-label={aiOpen ? "Close AI assistant" : "Open AI assistant"}
         >
-          <Sparkles />
+          <Sparkles aria-hidden="true" />
         </Button>
         <Button
+          size="lg"
           variant="secondary"
           onPress={onExport}
           aria-label="Export theme CSS"
+          aria-haspopup="dialog"
         >
-          <Code2 />
-          <span className="hidden sm:inline">Export CSS</span>
+          <Code2 aria-hidden="true" />
+          <span className="hidden @[36rem]/studio:inline">Export CSS</span>
         </Button>
       </div>
-    </Flex>
+    </Grid>
   );
 }

@@ -1,57 +1,40 @@
 import { Button, Spinner } from "@heroui/react";
-import { ArrowRight, Plus } from "lucide-react";
+import { Globe } from "lucide-react";
 import { useState } from "react";
 import {
   PlaygroundControls,
   PlaygroundPreview,
 } from "../../components/ComponentPlayground";
-import { ControlSelect } from "../../components/ControlSelect";
+import { ControlSegment } from "../../components/ControlSegment";
 import { ControlSwitch } from "../../components/ControlSwitch";
-import { BUTTON_VARIANTS, Size, SIZES } from "../../options";
+import { BUTTON_VARIANTS, SIZES, type Size } from "../../options";
 
-const variants = [{ key: "all", label: "All" }, ...BUTTON_VARIANTS] as const;
-const states = [
-  { key: "normal", label: "Normal" },
-  { key: "disabled", label: "Disabled" },
-  { key: "pending", label: "Pending" },
-] as const;
+const sizes = SIZES.map(({ key }) => key);
 
 export function ButtonPlayground() {
-  const [size, setSize] = useState<Size>("md");
-  const [variant, setVariant] = useState<(typeof variants)[number]["key"]>("all");
-  const [state, setState] = useState<(typeof states)[number]["key"]>("normal");
-  const [icon, setIcon] = useState(true);
+  const [size, setSize] = useState<Size>("sm");
+  const [isDisabled, setIsDisabled] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   return (
     <>
       <PlaygroundControls>
-        <ControlSelect
-          label="Size"
-          value={size}
-          options={SIZES}
-          onChange={setSize}
-        />
-        <ControlSelect label="Variant" value={variant} options={variants} onChange={setVariant} />
-        <ControlSelect label="State" value={state} options={states} onChange={setState} />
-        <ControlSwitch label="With icon" value={icon} onChange={setIcon} />
+        <ControlSegment label="Size" options={sizes} value={size} onChange={setSize} />
+        <ControlSwitch label="isDisabled" value={isDisabled} onChange={setIsDisabled} />
+        <ControlSwitch label="isPending" value={isPending} onChange={setIsPending} />
       </PlaygroundControls>
 
       <PlaygroundPreview>
-        {BUTTON_VARIANTS.filter(({ key }) => variant === "all" || key === variant).map(({ key, label }) => (
+        {BUTTON_VARIANTS.map(({ key, label }) => (
           <Button
             key={key}
             variant={key}
             size={size}
-            isDisabled={state === "disabled"}
-            isPending={state === "pending"}
+            isDisabled={isDisabled}
+            isPending={isPending}
           >
-            {({ isPending }) => (
-              <>
-                {isPending ? <Spinner size="sm" /> : icon ? <Plus aria-hidden="true" /> : null}
-                {label}
-                {!isPending && icon && <ArrowRight />}
-              </>
-            )}
+            {isPending ? <Spinner color="current" size="sm" /> : <Globe aria-hidden="true" />}
+            {label}
           </Button>
         ))}
       </PlaygroundPreview>

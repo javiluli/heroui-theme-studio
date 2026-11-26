@@ -1,274 +1,191 @@
 import { useState, type CSSProperties } from "react";
-import { Button, ColorSwatch, Label, ListBox, Select, Switch, ToggleButton, ToggleButtonGroup, Tooltip } from "@heroui/react";
-import { Check, Copy, RotateCcw, ClipboardPaste, Globe2, Info, Smartphone } from "lucide-react";
 import {
-  COLOR_TOKENS,
-  DEFAULT_THEME,
+  Button,
+  ColorSwatch,
+  ListBox,
+  Popover,
+  Tabs,
+  Tooltip,
+} from "@heroui/react";
+import {
+  Check,
+  ChevronDown,
+  RotateCcw,
+  ClipboardPaste,
+  Globe2,
+  Moon,
+  Smartphone,
+  Sun,
+} from "lucide-react";
+import {
   TOKEN_GROUPS,
-  type ColorToken,
+  type ThemeToken,
   type ThemeConfig,
   type ThemeMode,
 } from "../model";
-import { createPreset, PRESET_LABELS, templates, type PresetId } from "../templates";
-import { exportThemeCss, type ThemePlatform } from "../export-css";
+import { PRESET_LABELS, templates, type PresetId } from "../templates";
+import type { ThemeTemplate } from "../templates/types";
+import type { ThemePlatform } from "../export-css";
 import { ColorControl } from "./ColorControl";
-import { colorToHex, makeThemeIndependent } from "../conversion";
 import { ThemeSettingsPanel } from "./ThemeSettingsPanel";
-import { getModeSettings } from "../mode-layout";
-import { NATIVE_COLOR_LINKS } from "../native-color-links";
 import type { EditableThemeVariable } from "../token-descriptions";
-
-const linkExplanations: Partial<Record<ColorToken, string>> = {
-  accent: "Focus indicators follow the brand color.",
-  foreground: "Text across surfaces and overlays follows the main text color.",
-  muted: "Field placeholders follow the secondary text color.",
-};
 
 interface EditorPanelProps {
   platform: ThemePlatform;
-  onPlatformChange: (platform: ThemePlatform) => void;
   theme: ThemeConfig;
   mode: ThemeMode;
-  useNativeLinks: boolean;
-  onToggleNativeLinks: (enabled: boolean) => void;
+  onModeChange: (mode: ThemeMode) => void;
   highlightedVariable: EditableThemeVariable | null;
   selectedPreset: PresetId | "custom";
   onPreset: (preset: PresetId) => void;
-  onColor: (token: ColorToken, color: string) => void;
-  onPreviewColor: (token: ColorToken, color: string) => void;
-  onClearColorPreview: (token: ColorToken) => void;
-  onRadius: (value: number) => void;
-  onFieldRadius: (value: number) => void;
-  onFontFamily: (value: ThemeConfig["fontFamily"]) => void;
+  onToken: (token: ThemeToken, value?: string) => void;
   onReset: () => void;
   onImportCss: () => void;
 }
 
-const presets = templates.map(({ name, label }) => {
-  const { light, dark } = createPreset(name).palettes;
-  return {
-    key: name,
-    label,
-    accent: { light: colorToHex(light.accent, light), dark: colorToHex(dark.accent, dark) },
-  };
-});
-const resetPalettes = makeThemeIndependent(DEFAULT_THEME).palettes;
+const presets = templates.map(({ name, label, value }: ThemeTemplate) => ({
+  key: name,
+  label,
+  accent: value,
+}));
+const defaultAccent = "oklch(0.6204 0.195 253.83)";
 
 /** Layout utilities never target HeroUI BEM classes or override its component CSS. */
 export function EditorPanel({
   platform,
-  onPlatformChange,
   theme,
   mode,
-  useNativeLinks,
-  onToggleNativeLinks,
+  onModeChange,
   highlightedVariable,
   selectedPreset,
   onPreset,
-  onColor,
-  onPreviewColor,
-  onClearColorPreview,
-  onRadius,
-  onFieldRadius,
-  onFontFamily,
+  onToken,
   onReset,
   onImportCss,
 }: EditorPanelProps) {
-  const palette = theme.palettes[mode];
-  const [copy, setCopy] = useState<{ theme: ThemeConfig; platform: ThemePlatform; status: "done" | "error" }>();
-  const copyStatus = copy?.theme === theme && copy.platform === platform ? copy.status : "idle";
-  const copyCss = async () => {
-    try {
-      await navigator.clipboard.writeText(exportThemeCss(theme, platform));
-      setCopy({ theme, platform, status: "done" });
-    } catch {
-      setCopy({ theme, platform, status: "error" });
-    }
-  };
-  const nativeLinks = platform === "web" ? NATIVE_COLOR_LINKS[mode] : { ...NATIVE_COLOR_LINKS[mode], scrollbar: undefined };
-  const linkSources = [...new Set(Object.values(nativeLinks))].filter((source) => source !== undefined).sort();
-
+  const overrides = theme.overrides[mode];
+  const [presetsOpen, setPresetsOpen] = useState(false);
+  const presetLabel = selectedPreset === "custom" ? "Custom theme" : PRESET_LABELS[selectedPreset];
+  const nextMode = mode === "light" ? "dark" : "light";
+  const modeLabel = `Switch to ${nextMode} mode`;
   return (
     <aside
-      className={`flex min-h-0 min-w-0 flex-col gap-3 ${platform === "web" ? "@[56rem]/studio:sticky @[56rem]/studio:top-[4.5rem] @[56rem]/studio:max-h-[calc(100dvh-5.5rem)]" : ""}`}
+      className={`flex min-h-0 min-w-0 flex-col gap-3 ${platform === "web" ? "@[52rem]/studio:sticky @[52rem]/studio:top-[calc(var(--studio-header-height,3.5625rem)_+_var(--studio-inset))] @[52rem]/studio:max-h-[calc(100dvh_-_var(--studio-header-height,3.5625rem)_-_var(--studio-inset)_-_var(--studio-inset))]" : ""}`}
       aria-label="Theme editor"
     >
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-1 gap-y-2 px-2">
-        <div
-          className="flex items-center gap-1 sm:gap-2"
-          role="group"
-          aria-label="Theme actions"
-        >
-          <Tooltip>
-            <Button
-              size="md"
-              isIconOnly
-              variant="outline"
-              aria-label="Reset theme"
-              onPress={onReset}
-            >
-              <RotateCcw aria-hidden="true" />
-            </Button>
-            <Tooltip.Content>Reset theme</Tooltip.Content>
-          </Tooltip>
-          <Tooltip>
-            <Button
-              size="md"
-              isIconOnly
-              variant="outline"
-              aria-label={`Copy CSS ${platform === "web" ? "Web" : "Native"}`}
-              onPress={copyCss}
-            >
-              {copyStatus === "done" ? (
-                <Check aria-hidden="true" />
-              ) : (
-                <Copy aria-hidden="true" />
-              )}
-            </Button>
-            <Tooltip.Content>Copy theme CSS</Tooltip.Content>
-          </Tooltip>
-          <Tooltip>
-            <Button
-              size="md"
-              isIconOnly
-              variant="outline"
-              aria-label="Import CSS"
-              onPress={onImportCss}
-            >
-              <ClipboardPaste aria-hidden="true" />
-            </Button>
-            <Tooltip.Content>Import CSS</Tooltip.Content>
-          </Tooltip>
-          <span className="sr-only" role="status">
-            {copyStatus === "done" ? "CSS copied" : ""}
-          </span>
+      <div className="grid min-w-0 shrink-0 gap-1 px-2">
+        <div className="mb-1 w-fit max-w-full">
+          <Tabs.ListContainer>
+            <Tabs.List aria-label="Theme platform">
+              <Tabs.Tab id="web" className="gap-2">
+                <Globe2 size={16} aria-hidden="true" />
+                Web
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id="native" className="gap-2">
+                <Smartphone size={16} aria-hidden="true" />
+                Native
+                <Tabs.Indicator />
+              </Tabs.Tab>
+            </Tabs.List>
+          </Tabs.ListContainer>
         </div>
-        <div className="ms-auto flex shrink-0">
-          <ToggleButtonGroup size="sm" aria-label="Theme platform" selectionMode="single" disallowEmptySelection
-            selectedKeys={[platform]} onSelectionChange={(keys) => {
-              const selected = [...keys][0];
-              if (selected === "web" || selected === "native") onPlatformChange(selected);
-            }}>
-            <ToggleButton id="web">
-              <span className="hidden sm:inline-flex"><Globe2 size={14} aria-hidden="true" /></span>
-              Web
-            </ToggleButton>
-            <ToggleButton id="native">
-              <span className="hidden sm:inline-flex"><Smartphone size={14} aria-hidden="true" /></span>
-              Native
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </div>
-      </div>
-      <section aria-label="Theme settings"
-        className="scrollbar max-h-96 min-h-0 min-w-0 overflow-y-auto overscroll-contain @[56rem]/studio:max-h-none [@media(hover:hover)]:[&:not(:hover,:focus-within)]:[--scrollbar-color:transparent_transparent]"
-        data-scrollbar="thin">
-        <div className="flex flex-col gap-2 px-2 pb-0">
-          <div>
-            <Select
-              selectedKey={selectedPreset === "custom" ? null : selectedPreset}
-              onSelectionChange={(key) => {
-                if (key) onPreset(String(key) as PresetId);
-              }}
-              placeholder="Custom theme"
-            >
-              <Label>Theme preset</Label>
-              <Select.Trigger>
-                <Select.Value>
-                  <span className="flex min-w-0 items-center gap-2">
-                    <ColorSwatch size="xs" color="#000000"
-                      style={{ "--color-swatch-current": "var(--accent)" } as CSSProperties} aria-hidden="true" />
-                    <span className="truncate">{selectedPreset === "custom" ? "Custom theme" : PRESET_LABELS[selectedPreset]}</span>
+
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="min-w-36 flex-1">
+            <Popover isOpen={presetsOpen} onOpenChange={setPresetsOpen}>
+              <Button fullWidth size="lg" variant="tertiary" aria-label={`Theme presets, ${presetLabel}`}>
+                <span className="flex w-full min-w-0 items-center gap-2 text-left">
+                  <span className="shrink-0" aria-hidden="true">
+                    <ColorSwatch size="xs" shape="square" color="#000000"
+                      style={{ "--color-swatch-current": "var(--accent)" } as CSSProperties} />
                   </span>
-                </Select.Value>
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox items={presets}>
-                  {(item) => (
-                    <ListBox.Item id={item.key} textValue={item.label}>
-                      <ColorSwatch size="xs" color={item.accent[mode]} aria-hidden="true" />
-                      <span>{item.label}</span>
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  )}
-                </ListBox>
-              </Select.Popover>
-            </Select>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <Switch
-              size="sm"
-              isSelected={useNativeLinks}
-              onChange={onToggleNativeLinks}
-            >
-              <Switch.Content>
-                <Switch.Control>
-                  <Switch.Thumb />
-                </Switch.Control>
-                <Label>HeroUI token links</Label>
-              </Switch.Content>
-            </Switch>
-            <Tooltip delay={200}>
-              <Button
-                size="sm"
-                isIconOnly
-                variant="ghost"
-                aria-label="About HeroUI token links"
-              >
-                <Info size={15} aria-hidden="true" />
+                  <span className="min-w-0 flex-1 truncate">{presetLabel.replace(/^HeroUI /, "")}</span>
+                  <ChevronDown className="shrink-0" aria-hidden="true" />
+                </span>
               </Button>
-              <Tooltip.Content placement="right">
-                <div className="max-w-80 space-y-3 text-xs leading-snug">
-                  <p>
-                    <strong>
-                      HeroUI defaults for {platform === "native" ? "Native" : "Web"} · {" "}
-                      {mode === "light" ? "Light" : "Dark"}
-                    </strong>
-                  </p>
-                  <p>
-                    These are HeroUI’s default color links for this mode. When enabled, each group follows its main token, so changing that color updates the whole group.
-                  </p>
-                  <p>
-                    Linked controls are hidden automatically. Turn off token links to show them and edit each color independently.
-                  </p>
-                  <div className="space-y-3">
-                    {linkSources.map((source) => {
-                      const dependents = COLOR_TOKENS.filter(
-                        (token) => nativeLinks[token] === source,
-                      );
-                      return (
-                        <section key={source} aria-labelledby={`linked-colors-${source}`}
-                          className="space-y-1 border-t border-separator pt-2">
-                          <h3 id={`linked-colors-${source}`} className="text-sm font-semibold text-foreground">
-                            <code>--{source}</code>
-                          </h3>
-                          {linkExplanations[source] && <p>{linkExplanations[source]}</p>}
-                          <ul className="list-disc space-y-0.5 ps-4">
-                            {dependents.map((token) => (
-                              <li key={token} className="wrap-anywhere">
-                                <code>--{token}</code>
-                                {token === "scrollbar" && <span> · main text color at 15% opacity</span>}
-                              </li>
-                            ))}
-                          </ul>
-                        </section>
-                      );
-                    })}
+              <Popover.Content placement="bottom start">
+                <Popover.Dialog>
+                  <div className="w-72 max-w-[calc(100vw-2rem)]">
+                    <Popover.Heading>Theme presets</Popover.Heading>
+                    <div className="mt-2">
+                      <ListBox
+                        aria-label="Theme presets"
+                        autoFocus
+                        layout="grid"
+                        className="grid grid-cols-2 gap-1 min-[20rem]:grid-cols-3"
+                        items={presets}
+                        selectionMode="single"
+                        disallowEmptySelection
+                        selectedKeys={selectedPreset === "custom" ? [] : [selectedPreset]}
+                        onSelectionChange={(keys) => {
+                          if (keys === "all") return;
+                          const key = [...keys][0];
+                          const preset = templates.find((entry) => entry.name === key);
+                          if (preset) {
+                            onPreset(preset.name);
+                            setPresetsOpen(false);
+                          }
+                        }}
+                      >
+                        {(item) => (
+                          <ListBox.Item id={item.key} textValue={item.label} aria-label={item.label}>
+                            {({ isSelected }) => (
+                              <span className="relative grid w-full min-w-0 justify-items-center gap-2 text-center">
+                                <span className={`rounded-md ring-1 ${isSelected ? "ring-foreground ring-offset-2 ring-offset-overlay" : "ring-foreground/15"}`}
+                                  aria-hidden="true">
+                                  <ColorSwatch
+                                    size="lg"
+                                    shape="square"
+                                    color="#000000"
+                                    style={{ "--color-swatch-current": item.accent[mode].accent ?? defaultAccent } as CSSProperties}
+                                  />
+                                </span>
+                                <span className="min-h-8 text-xs leading-4 font-medium">
+                                  {item.label}
+                                </span>
+                                {isSelected && <Check className="absolute end-0 top-0" size={13} aria-hidden="true" />}
+                              </span>
+                            )}
+                          </ListBox.Item>
+                        )}
+                      </ListBox>
+                    </div>
                   </div>
-                </div>
-              </Tooltip.Content>
+                </Popover.Dialog>
+              </Popover.Content>
+            </Popover>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1" role="group" aria-label="Theme actions">
+            <Tooltip>
+              <Button size="lg" isIconOnly variant="ghost" aria-label={modeLabel} onPress={() => onModeChange(nextMode)}>
+                {mode === "light" ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
+              </Button>
+              <Tooltip.Content>{modeLabel}</Tooltip.Content>
+            </Tooltip>
+            <Tooltip>
+              <Button size="lg" isIconOnly variant="ghost" aria-label="Reset theme" onPress={onReset}>
+                <RotateCcw aria-hidden="true" />
+              </Button>
+              <Tooltip.Content>Reset theme</Tooltip.Content>
+            </Tooltip>
+            <Tooltip>
+              <Button size="lg" isIconOnly variant="ghost" aria-label="Import CSS" onPress={onImportCss}>
+                <ClipboardPaste aria-hidden="true" />
+              </Button>
+              <Tooltip.Content>Import CSS</Tooltip.Content>
             </Tooltip>
           </div>
         </div>
 
-        {copyStatus === "error" && (
-          <p className="px-2 pt-2 text-xs text-danger" role="alert">
-            Could not copy CSS. Use Export CSS instead.
-          </p>
-        )}
-
-        <div className="flex flex-col gap-5 px-2 pt-4 pb-3">
+      </div>
+      <section
+        aria-label="Theme settings"
+        className={`scrollbar min-h-0 min-w-0 overflow-y-auto overscroll-contain @[52rem]/studio:max-h-none [@media(hover:hover)]:[&:not(:hover,:focus-within)]:[--scrollbar-color:transparent_transparent] ${platform === "web" ? "max-h-(--studio-mobile-editor-height)" : "max-h-40"}`}
+        data-scrollbar="thin"
+      >
+        <div className="flex flex-col gap-5 px-2 pt-1 pb-3">
           {TOKEN_GROUPS.map((group) => (
             <section
               className="space-y-2"
@@ -278,33 +195,35 @@ export function EditorPanel({
               <h3 className="text-sm font-semibold">{group.title}</h3>
 
               <div className="grid grid-cols-2 items-stretch gap-2">
-                {group.tokens.filter((token) => platform === "web" || token !== "scrollbar").map((token) => {
-                  if (useNativeLinks && nativeLinks[token]) return null;
-                  return <ColorControl
-                    key={token}
-                    token={token}
-                    value={palette[token]}
-                    resetValue={resetPalettes[mode][token]}
-                    hex={colorToHex(palette[token], palette)}
-                    highlighted={highlightedVariable === `--${token}`}
-                    onChange={onColor}
-                    onPreview={onPreviewColor}
-                    onClearPreview={onClearColorPreview}
-                  />;
-                })}
+                {group.tokens
+                  .filter(
+                    (token) =>
+                      platform === "web" || token !== "scrollbar-thumb",
+                  )
+                  .map((token) => (
+                    <ColorControl
+                      key={`${mode}-${token}`}
+                      token={token}
+                      value={overrides[token]}
+                      highlighted={highlightedVariable === `--${token}`}
+                      onChange={onToken}
+                    />
+                  ))}
               </div>
             </section>
           ))}
 
           <ThemeSettingsPanel
-            {...getModeSettings(theme, mode)}
+            overrides={overrides}
+            mode={mode}
             highlightedVariable={highlightedVariable}
-            onRadius={onRadius}
-            onFieldRadius={onFieldRadius}
-            onFontFamily={onFontFamily}
+            onToken={onToken}
           />
           {platform === "native" && (
-            <p className="text-xs text-muted">The selected font applies to the preview. Configure individual weights in your Expo app.</p>
+            <p className="text-xs text-muted">
+              The selected font applies to the preview. Configure individual
+              weights in your Expo app.
+            </p>
           )}
         </div>
       </section>

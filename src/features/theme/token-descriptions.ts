@@ -1,6 +1,6 @@
-import type { ColorToken } from "./model";
+import type { ThemeToken } from "./model";
 
-export type EditableThemeVariable = `--${ColorToken}` | "--radius" | "--field-radius" | "--font-sans";
+export type EditableThemeVariable = `--${ThemeToken}`;
 
 // HeroUI React v3: Colors, Theming and the linked default theme CSS.
 export const TOKEN_DESCRIPTIONS: Record<EditableThemeVariable, string> = {
@@ -21,7 +21,9 @@ export const TOKEN_DESCRIPTIONS: Record<EditableThemeVariable, string> = {
   "--muted": "Lower-emphasis text and elements.",
   "--overlay": "Surface color for floating content such as popovers. The backdrop behind a dialog uses a separate HeroUI token.",
   "--overlay-foreground": "Text and icons on overlays.",
-  "--scrollbar": "Thumb color for HeroUI-themed Web scroll areas in the studio. Linked mode derives it from the foreground.",
+  "--scrollbar-thumb": "Thumb color for HeroUI scroll areas on Web. The default is tinted from the main text color.",
+  "--link": "Link text color. By default it follows the primary text color.",
+  "--backdrop": "Tint behind dialogs and other overlays.",
   "--segment": "Background of the selected segment, such as the indicator in primary Tabs.",
   "--segment-foreground": "Selected segment text and icons.",
   "--separator": "Subtle lines that separate content.",
@@ -37,5 +39,7 @@ export const TOKEN_DESCRIPTIONS: Record<EditableThemeVariable, string> = {
   "--warning-foreground": "Text and icons on a warning background.",
   "--radius": "Base radius. HeroUI derives several corner sizes from this value.",
   "--field-radius": "Corner radius of form fields.",
+  "--border-width": "Thickness of standard borders.",
+  "--field-border-width": "Thickness of form field borders.",
   "--font-sans": "Global sans-serif font family and its fallbacks.",
 };

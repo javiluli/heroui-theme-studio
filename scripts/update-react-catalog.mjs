@@ -19,8 +19,6 @@ const aliases = new Map();
 for (const [, name, value] of theme.matchAll(/^\s*(--[\w-]+):\s*([^;]+);/gm)) {
   aliases.set(name, [...(aliases.get(name) ?? []), ...cssRefs(value)]);
 }
-// The preview maps the editable scrollbar color to HeroUI's scrollbar utility.
-aliases.set("--scrollbar-color", ["--scrollbar"]);
 const rules = new Map();
 for (const match of utilities.matchAll(/@utility\s+([\w-]+)\s*\{/g)) {
   const start = match.index + match[0].length;

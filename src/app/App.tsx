@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { Analytics } from "@vercel/analytics/react";
-import { Container, Flex, Grid } from "../components/layout";
+import { Flex } from "../components/layout";
 import { EditorPanel } from "../features/theme/components/EditorPanel";
 import { ExportPanel } from "../features/theme/components/ExportPanel";
 import { ImportCssPanel } from "../features/theme/components/ImportCssPanel";
@@ -18,20 +18,19 @@ import {
   ThemeStudioProvider,
   useThemeStudio,
 } from "../features/theme/ThemeStudioContext";
-import { StudioHeader } from "./layout/StudioHeader";
-import { StudioViews, type StudioPage } from "./layout/StudioViews";
+import type { StudioPage } from "./layout/StudioViews";
+import { StudioWorkspace } from "./layout/StudioWorkspace";
 import { ViewLoadBoundary } from "./layout/ViewLoadBoundary";
 
 const ComponentGallery = lazy(
   () => import("../features/playground/ComponentGallery"),
 );
-const ComponentIndex = lazy(
-  () => import("../features/playground/components/ComponentIndex")
-    .then(({ ComponentIndex }) => ({ default: ComponentIndex })),
+const ComponentIndex = lazy(() =>
+  import("../features/playground/components/ComponentIndex").then(
+    ({ ComponentIndex }) => ({ default: ComponentIndex }),
+  ),
 );
-const RealWebsite = lazy(
-  () => import("../features/website/RealWebsite"),
-);
+const RealWebsite = lazy(() => import("../features/website/RealWebsite"));
 const NativePreviewPage = lazy(
   () => import("../features/native/NativePreviewPage"),
 );
@@ -60,10 +59,9 @@ function StudioApp() {
   );
   const aiOpen = assistant === "open";
   const aiTrigger = useRef<HTMLButtonElement>(null);
-  const studioHeader = useRef<HTMLElement>(null);
   const css = useMemo(
-    () => (exportOpen ? exportThemeCss(editor.previewTheme, platform) : ""),
-    [editor.previewTheme, exportOpen, platform],
+    () => exportThemeCss(editor.theme, platform),
+    [editor.theme, platform],
   );
   const closeExport = useCallback(() => setExportOpen(false), []);
   const closeAI = useCallback(() => {
@@ -71,19 +69,6 @@ function StudioApp() {
     requestAnimationFrame(() =>
       aiTrigger.current?.focus({ preventScroll: true }),
     );
-  }, []);
-
-  useEffect(() => {
-    const header = studioHeader.current;
-    const studio = header?.parentElement;
-    if (!header || !studio || typeof ResizeObserver === "undefined") return;
-    const measure = () => {
-      studio.style.setProperty("--studio-header-height", `${header.offsetHeight}px`);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(header);
-    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -110,7 +95,7 @@ function StudioApp() {
   return (
     <Flex
       data-theme-world="specimen"
-      className={`${page === "native" ? "min-h-dvh" : "min-h-screen"} w-full bg-background text-foreground`}
+      className="min-h-dvh w-full bg-background text-foreground [--studio-assistant-width:clamp(20rem,28vw,24.875rem)]"
     >
       <div
         className={
@@ -119,103 +104,59 @@ function StudioApp() {
             : "@container/studio min-w-0 flex-1"
         }
       >
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-(--radius) focus:bg-surface focus:p-3 focus:text-surface-foreground focus:outline-2 focus:outline-focus"
-        >
-          Skip to preview
-        </a>
-        <header className="sticky top-0 z-30 border-b border-separator bg-background" ref={studioHeader}>
-          <Container>
-            <StudioHeader
-              platform={platform}
-              mode={editor.mode}
-              aiOpen={aiOpen}
-              aiTrigger={aiTrigger}
-              onModeChange={editor.setMode}
-              onToggleAI={() => setAssistant(aiOpen ? "closed" : "open")}
-              onExport={() => setExportOpen(true)}
-            />
-          </Container>
-        </header>
-        <Container>
-          <Grid className={
-            "grid-cols-1 gap-5 py-4 @[56rem]/studio:grid-cols-[24rem_minmax(0,1fr)] " +
-            (page === "components"
-              ? "items-start @[84rem]/studio:[--catalog-rail:clamp(18rem,22%,24rem)] @[84rem]/studio:grid-cols-[var(--catalog-rail)_minmax(0,56rem)_var(--catalog-rail)] @[84rem]/studio:justify-between"
-              : page === "native"
-                ? "h-[calc(100dvh-var(--studio-header-height,3.5625rem))] grid-rows-[minmax(0,1fr)_minmax(0,3fr)] @[56rem]/studio:grid-rows-[minmax(0,1fr)]"
-                : "items-start")
-          }>
+        <StudioWorkspace
+          page={page}
+          onNavigate={navigate}
+          onPlatformChange={(platform) => navigate(platform === "native" ? "native" : lastWebPage.current)}
+          headerActions={{
+            platform,
+            aiOpen,
+            aiTrigger,
+            onToggleAI: () => setAssistant(aiOpen ? "closed" : "open"),
+            onExport: () => setExportOpen(true),
+          }}
+          editor={
             <EditorPanel
               platform={platform}
-              onPlatformChange={(next) =>
-                navigate(next === "native" ? "native" : lastWebPage.current)
-              }
-              theme={editor.previewTheme}
+              theme={editor.theme}
               mode={editor.mode}
-              useNativeLinks={editor.useNativeLinks}
-              onToggleNativeLinks={editor.toggleNativeLinks}
-              highlightedVariable={editor.highlightedVariable}
+              onModeChange={editor.setMode}
+              highlightedVariable={editor.selectedVariable}
               selectedPreset={editor.selectedPreset}
               onPreset={editor.applyPreset}
-              onColor={editor.setColor}
-              onPreviewColor={editor.previewColor}
-              onClearColorPreview={editor.clearColorPreview}
-              onRadius={editor.setRadius}
-              onFieldRadius={editor.setFieldRadius}
-              onFontFamily={editor.setFontFamily}
-              onReset={editor.reset}
+              onToken={editor.setToken}
+              onReset={() => editor.applyPreset("default")}
               onImportCss={() => setImportOpen(true)}
             />
-
-            <main
-              id="main-content"
-              tabIndex={-1}
-              className={`mx-auto w-full min-w-0 focus-visible:outline-2 focus-visible:outline-focus ${page === "native" ? "min-h-0 max-w-334" : `scroll-mt-24 pb-16 ${page === "components" ? "max-w-334" : "max-w-6xl"}`}`}
-            >
-              <StudioViews page={page} onNavigate={navigate}>
-                <ViewLoadBoundary
-                  key={page === "collage" ? "components" : page}
-                  fallback={
-                    <div className="space-y-2 text-sm">
-                      <p role="alert">The preview could not be loaded.</p>
-                      <ReloadPage />
-                    </div>
-                  }
-                >
-                  <Suspense
-                    fallback={
-                      <p role="status" className="text-sm text-muted">
-                        Loading preview…
-                      </p>
-                    }
-                  >
-                    {(page === "components" || page === "collage") && (
-                      <ComponentGallery
-                        layout={page === "collage" ? "collage" : "list"}
-                        onGalleryReady={setCatalog}
-                        anchorTarget={catalogAnchor}
-                      />
-                    )}
-                    {page === "website" && <RealWebsite />}
-                    {page === "native" && (
-                      <NativePreviewPage
-                        theme={editor.previewTheme}
-                        mode={editor.mode}
-                      />
-                    )}
-                  </Suspense>
-                </ViewLoadBoundary>
-              </StudioViews>
-            </main>
-            {page === "components" && catalog && (
-              <Suspense fallback={null}>
-                <ComponentIndex gallery={catalog} anchorTarget={catalogAnchor} />
-              </Suspense>
-            )}
-          </Grid>
-        </Container>
+          }
+          index={page === "components" && catalog && (
+            <Suspense fallback={null}>
+              <ComponentIndex gallery={catalog} anchorTarget={catalogAnchor} />
+            </Suspense>
+          )}
+        >
+          <ViewLoadBoundary
+            key={page}
+            fallback={
+              <div className="space-y-2 text-sm">
+                <p role="alert">The preview could not be loaded.</p>
+                <ReloadPage />
+              </div>
+            }
+          >
+            <Suspense fallback={<p role="status" className="text-sm text-muted">Loading preview…</p>}>
+              {(page === "components" || page === "collage") && (
+                <ComponentGallery
+                  layout={page === "collage" ? "collage" : "list"}
+                  onGalleryReady={setCatalog}
+                  anchorTarget={catalogAnchor}
+                />
+              )}
+              {page === "website" && <RealWebsite />}
+              {page === "native" && <NativePreviewPage theme={editor.theme} mode={editor.mode} />}
+            </Suspense>
+          </ViewLoadBoundary>
+        </StudioWorkspace>
       </div>
       {assistant !== "unopened" && (
         <ViewLoadBoundary
@@ -233,12 +174,9 @@ function StudioApp() {
           </Suspense>
         </ViewLoadBoundary>
       )}
-      {exportOpen && (
-        <ExportPanel css={css} platform={platform} onClose={closeExport} />
-      )}
+      <ExportPanel css={css} platform={platform} isOpen={exportOpen} onClose={closeExport} />
       {importOpen && (
         <ImportCssPanel
-          theme={editor.theme}
           platform={platform}
           onApply={editor.importTheme}
           onClose={() => setImportOpen(false)}
@@ -263,9 +201,9 @@ function AssistantPlaceholder({
       onKeyDown={(event) => {
         if (event.key === "Escape") onClose();
       }}
-      className="sticky top-0 h-dvh w-full shrink-0 space-y-3 border-l border-separator bg-surface p-4 text-sm text-surface-foreground lg:w-99.5"
+      className="sticky top-0 h-dvh w-full shrink-0 space-y-3 border-l border-separator bg-surface p-4 text-sm text-surface-foreground lg:w-(--studio-assistant-width)"
     >
-      <Button size="sm" variant="ghost" autoFocus onPress={onClose}>
+      <Button size="lg" variant="ghost" autoFocus onPress={onClose}>
         Close assistant
       </Button>
       {failed ? (
