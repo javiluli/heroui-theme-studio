@@ -44,6 +44,15 @@
         ],
         "createdAt": "2026-11-22T01:41:49.437Z",
         "reason": "Codex review: the Expo export puts four independent utility selectors on the same minified line. The matched utilities are absent from the runtime source and from Home, Dayplan, and the component library in the browser."
+      },
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "src/features/playground/components/CollagePreview.tsx"
+        ],
+        "createdAt": "2026-11-26T12:23:15.287Z",
+        "reason": "Agent: existing multicolor AvatarGroup samples in the Collage demo use fixed gradients as specimen content, separate from the editor palette."
       }
     ]
   }

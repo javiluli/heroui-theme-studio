@@ -5,11 +5,11 @@ Unofficial theme generator for HeroUI v3
 ## Use the editor
 
 1. Pick a **Theme preset** or import an existing HeroUI CSS theme.
-2. Edit colors, radii, and typography in the sidebar. Switch between light and dark mode from the header.
+2. Edit colors, radii, border widths, and typography in the sidebar. Switch between light and dark mode from the editor toolbar.
 3. Try **Components**, **Collage**, and **Web** for React, or switch to **Native** and choose a phone or custom viewport.
 4. Select **Export CSS**. Add the export after `@heroui/styles` in a React project or after `heroui-native/styles` in an Expo project.
 
-Your theme is saved in this browser. The optional AI assistant runs locally with WebGPU and downloads a model when you request a theme. The proposal is applied only when you select **Apply theme**.
+HeroUI Default uses the installed library theme. The editor saves and exports overrides per mode. Reset a control to restore its original value or relationship. Importing CSS replaces the current overrides. The optional AI assistant runs locally with WebGPU and downloads a model when you request a theme. The proposal is applied only when you select **Apply theme**.
 
 ## Run locally
 
@@ -23,7 +23,6 @@ npm run dev
 To verify and serve the production build locally:
 
 ```sh
-npm test
 npm run build
 npm run preview
 ```
